@@ -78,6 +78,7 @@ SHAMANPOWER_DEFAULT_VALUES = {
         ShowTooltips = true,
         ShowWhenSolo = true,
         showDropAllButton = true,  -- Show the Drop All Totems button on mini bar
+        dropOrder = {1, 2, 3, 4},  -- Order to drop totems: 1=Earth, 2=Fire, 3=Water, 4=Air
         skin = "Smooth",
         SmartBuffs = true,
         syncToTotemTimers = true,  -- Sync assignments to TotemTimers addon (if installed)

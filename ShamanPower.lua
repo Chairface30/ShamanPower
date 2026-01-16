@@ -1578,10 +1578,11 @@ function ShamanPower:UpdateDropAllButton()
 	local assignments = ShamanPower_Assignments[playerName]
 	if not assignments then return end
 
-	-- Build ordered list of assigned totems
+	-- Build ordered list of assigned totems using custom drop order
 	local newSequence = {}
 	local totemSpells = {}
-	for element = 1, 4 do
+	local dropOrder = self.opt.dropOrder or {1, 2, 3, 4}
+	for _, element in ipairs(dropOrder) do
 		local totemIndex = assignments[element] or 0
 		if totemIndex and totemIndex > 0 then
 			local spellID = self:GetTotemSpell(element, totemIndex)

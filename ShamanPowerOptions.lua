@@ -565,6 +565,96 @@ ShamanPower.options = {
 								ShamanPower:UpdateRoster()
 							end
 						},
+						drop_order_header = {
+							order = 2.5,
+							type = "description",
+							name = "\n|cffffd200Drop Order:|r Choose the order totems are dropped",
+							fontSize = "medium",
+						},
+						drop_order_1 = {
+							order = 2.6,
+							type = "select",
+							name = "1st",
+							desc = "First totem to drop",
+							width = 0.5,
+							values = {
+								[1] = "Earth",
+								[2] = "Fire",
+								[3] = "Water",
+								[4] = "Air",
+							},
+							get = function(info)
+								return ShamanPower.opt.dropOrder and ShamanPower.opt.dropOrder[1] or 1
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.dropOrder then ShamanPower.opt.dropOrder = {1, 2, 3, 4} end
+								ShamanPower.opt.dropOrder[1] = val
+								ShamanPower:UpdateDropAllButton()
+							end
+						},
+						drop_order_2 = {
+							order = 2.7,
+							type = "select",
+							name = "2nd",
+							desc = "Second totem to drop",
+							width = 0.5,
+							values = {
+								[1] = "Earth",
+								[2] = "Fire",
+								[3] = "Water",
+								[4] = "Air",
+							},
+							get = function(info)
+								return ShamanPower.opt.dropOrder and ShamanPower.opt.dropOrder[2] or 2
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.dropOrder then ShamanPower.opt.dropOrder = {1, 2, 3, 4} end
+								ShamanPower.opt.dropOrder[2] = val
+								ShamanPower:UpdateDropAllButton()
+							end
+						},
+						drop_order_3 = {
+							order = 2.8,
+							type = "select",
+							name = "3rd",
+							desc = "Third totem to drop",
+							width = 0.5,
+							values = {
+								[1] = "Earth",
+								[2] = "Fire",
+								[3] = "Water",
+								[4] = "Air",
+							},
+							get = function(info)
+								return ShamanPower.opt.dropOrder and ShamanPower.opt.dropOrder[3] or 3
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.dropOrder then ShamanPower.opt.dropOrder = {1, 2, 3, 4} end
+								ShamanPower.opt.dropOrder[3] = val
+								ShamanPower:UpdateDropAllButton()
+							end
+						},
+						drop_order_4 = {
+							order = 2.9,
+							type = "select",
+							name = "4th",
+							desc = "Fourth totem to drop",
+							width = 0.5,
+							values = {
+								[1] = "Earth",
+								[2] = "Fire",
+								[3] = "Water",
+								[4] = "Air",
+							},
+							get = function(info)
+								return ShamanPower.opt.dropOrder and ShamanPower.opt.dropOrder[4] or 4
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.dropOrder then ShamanPower.opt.dropOrder = {1, 2, 3, 4} end
+								ShamanPower.opt.dropOrder[4] = val
+								ShamanPower:UpdateDropAllButton()
+							end
+						},
 						auto_wait = {
 							order = 3,
 							type = "toggle",

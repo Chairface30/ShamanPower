@@ -1,0 +1,24 @@
+## Interface: 20505
+## Author: taubut (based on PallyPower by Aznamir, Dyaxler, Es, gallantron)
+## Title: ShamanPower
+## Version: 1.0.0
+## Notes: Raid/Party Shaman Totem Coordination
+## Notes-esES: Coordinacion de Totems de Chaman para Grupo/Banda
+## Notes-zhCN: 萨满图腾协调管理
+## DefaultState: enabled
+## Dependencies:
+## OptionalDeps: Ace3, LibSharedMedia-3.0, SharedMedia
+## X-Category: Shaman
+## X-Embeds: Ace3, LibClassicDurations, LibSharedMedia-3.0, LibUIDropDownMenu
+## SavedVariables: ShamanPowerDB, ShamanPower_Assignments, ShamanPower_WeaponAssignments, ShamanPower_SavedPresets, ShamanPower_EarthShieldAssignments
+
+#@no-lib-strip@
+embeds.xml
+#@end-no-lib-strip@
+
+locale\enUS.lua
+
+ShamanPower.lua
+ShamanPowerValues.lua
+ShamanPowerOptions.lua
+ShamanPower_TBC.xml

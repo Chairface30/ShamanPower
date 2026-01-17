@@ -190,6 +190,9 @@ ShamanPower.options = {
 								return ShamanPower.opt.layout
 							end,
 							set = function(info, val)
+								-- Don't change layout in combat
+								if InCombatLockdown() then return end
+
 								-- Save current autoButton screen position before layout change
 								local oldLayout = ShamanPower.opt.layout
 								local autoBtn = ShamanPower.autoButton
@@ -214,7 +217,7 @@ ShamanPower.options = {
 
 										-- Move the main frame to compensate
 										local frame = _G["ShamanPowerFrame"]
-										if frame then
+										if frame and not InCombatLockdown() then
 											local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint()
 											if point and xOfs and yOfs then
 												frame:ClearAllPoints()
@@ -223,6 +226,9 @@ ShamanPower.options = {
 										end
 									end
 								end
+
+								-- Update cooldown bar position for new layout
+								ShamanPower:UpdateCooldownBar()
 							end,
 							values = {
 								["Horizontal"] = "Horizontal",
@@ -563,6 +569,58 @@ ShamanPower.options = {
 							set = function(info, val)
 								ShamanPower.opt.showDropAllButton = val
 								ShamanPower:UpdateRoster()
+							end
+						},
+						show_party_range = {
+							order = 2.1,
+							type = "toggle",
+							name = "Show Party Range Dots",
+							desc = "[Enable/Disable] Show colored dots indicating which party members are in range of your totems (party only, not raid)",
+							width = 1.3,
+							get = function(info)
+								return ShamanPower.opt.showPartyRangeDots
+							end,
+							set = function(info, val)
+								ShamanPower.opt.showPartyRangeDots = val
+								ShamanPower:UpdatePartyRangeDots()
+							end
+						},
+						show_cooldown_bar = {
+							order = 2.2,
+							type = "toggle",
+							name = "Show Cooldown Bar",
+							desc = "[Enable/Disable] Show a cooldown tracker bar below the totem bar (Shields, Ankh, Nature's Swiftness)",
+							width = 1.3,
+							get = function(info)
+								return ShamanPower.opt.showCooldownBar
+							end,
+							set = function(info, val)
+								ShamanPower.opt.showCooldownBar = val
+								ShamanPower:UpdateCooldownBar()
+							end
+						},
+						preferred_shield = {
+							order = 2.3,
+							type = "select",
+							name = "Shield Spell",
+							desc = "Select which shield spell is cast when clicking the shield button on the cooldown bar",
+							width = 1.0,
+							disabled = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							values = {
+								[1] = "Lightning Shield",
+								[2] = "Water Shield",
+							},
+							get = function(info)
+								return ShamanPower.opt.preferredShield or 1
+							end,
+							set = function(info, val)
+								ShamanPower.opt.preferredShield = val
+								-- Recreate cooldown bar to update the click action (must be out of combat)
+								if not InCombatLockdown() then
+									ShamanPower:RecreateCooldownBar()
+								end
 							end
 						},
 						drop_order_header = {

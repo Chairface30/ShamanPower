@@ -1239,6 +1239,581 @@ function ShamanPower:UpdatePulseGlow(element, totemData, startTime)
 end
 
 -- ============================================================================
+-- Party Range Dots (shows which party members are in totem range)
+-- ============================================================================
+
+ShamanPower.partyRangeDots = {}  -- [element][partyIndex] = dot texture
+
+-- Buff names that totems apply to party members (used for range detection)
+ShamanPower.TotemBuffNames = {
+	[1] = {  -- Earth
+		[1] = "Strength of Earth",
+		[2] = "Stoneskin",
+		-- Tremor, Earthbind, Stoneclaw, Earth Elemental don't have party buffs
+	},
+	[2] = {  -- Fire
+		[1] = "Totem of Wrath",
+		[5] = "Flametongue Totem",
+		[6] = "Frost Resistance",
+		-- Searing, Magma, Fire Nova are damage totems with no party buff
+	},
+	[3] = {  -- Water
+		[1] = "Mana Spring",
+		[2] = "Healing Stream",  -- This heals, doesn't buff
+		[3] = "Mana Tide",
+		[6] = "Fire Resistance",
+		-- Poison/Disease cleansing don't have visible buffs
+	},
+	[4] = {  -- Air
+		[1] = "Windfury Totem",
+		[2] = "Grace of Air",
+		[3] = "Wrath of Air",
+		[4] = "Tranquil Air",
+		[6] = "Nature Resistance",
+		[7] = "Windwall",
+	},
+}
+
+-- Create party range dots for a totem button
+function ShamanPower:CreatePartyRangeDots(button, element)
+	if not button then return end
+	if self.partyRangeDots[element] then return end  -- Already created
+
+	self.partyRangeDots[element] = {}
+
+	for i = 1, 4 do
+		local dot = button:CreateTexture(nil, "OVERLAY")
+		dot:SetTexture("Interface\\AddOns\\ShamanPower\\textures\\dot")
+		dot:SetSize(5, 5)  -- Smaller dots for inside corners
+
+		-- Position dots inside the button corners (2x2 grid)
+		-- 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
+		if i == 1 then
+			dot:SetPoint("TOPLEFT", button, "TOPLEFT", 1, -1)
+		elseif i == 2 then
+			dot:SetPoint("TOPRIGHT", button, "TOPRIGHT", -1, -1)
+		elseif i == 3 then
+			dot:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 1, 1)
+		else
+			dot:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
+		end
+
+		dot:SetVertexColor(1, 1, 1)  -- Default white, will be colored by class
+		dot:Hide()
+		self.partyRangeDots[element][i] = dot
+	end
+end
+
+-- Setup all party range dots for the mini totem bar
+function ShamanPower:SetupPartyRangeDots()
+	for element = 1, 4 do
+		local button = _G["ShamanPowerAutoTotem" .. element]
+		if button then
+			self:CreatePartyRangeDots(button, element)
+		end
+	end
+
+	-- Start the range tracking update if not already running
+	if not self.partyRangeFrame then
+		self.partyRangeFrame = CreateFrame("Frame")
+		self.partyRangeFrame.elapsed = 0
+
+		self.partyRangeFrame:SetScript("OnUpdate", function(frame, elapsed)
+			frame.elapsed = frame.elapsed + elapsed
+			if frame.elapsed < 0.5 then return end  -- Update every 0.5 seconds
+			frame.elapsed = 0
+
+			ShamanPower:UpdatePartyRangeDots()
+		end)
+		self.partyRangeFrame:Show()
+	end
+end
+
+-- Get the buff name for the currently active totem of an element
+function ShamanPower:GetActiveTotemBuffName(element)
+	local slot = self.ElementToSlot[element]
+	if not slot then return nil end
+
+	local haveTotem, totemName = GetTotemInfo(slot)
+	if not haveTotem or not totemName then return nil end
+
+	-- Match totem name to buff name
+	local assignments = ShamanPower_Assignments[self.player]
+	if not assignments then return nil end
+
+	local totemIndex = assignments[element]
+	if not totemIndex or totemIndex == 0 then return nil end
+
+	-- Return the buff name for this totem type
+	local buffNames = self.TotemBuffNames[element]
+	if buffNames and buffNames[totemIndex] then
+		return buffNames[totemIndex]
+	end
+
+	-- Fallback: try to match based on totem name
+	for pattern, buffName in pairs(buffNames or {}) do
+		if type(buffName) == "string" and totemName:find(buffName) then
+			return buffName
+		end
+	end
+
+	return nil
+end
+
+-- Check if a unit has a specific buff
+function ShamanPower:UnitHasBuff(unit, buffName)
+	if not buffName then return false end
+
+	for i = 1, 40 do
+		local name = UnitBuff(unit, i)
+		if not name then break end
+		if name:find(buffName) then
+			return true
+		end
+	end
+	return false
+end
+
+-- Update all party range dots
+function ShamanPower:UpdatePartyRangeDots()
+	-- Check if feature is enabled
+	if not self.opt.showPartyRangeDots then
+		-- Hide all dots when disabled
+		for element = 1, 4 do
+			if self.partyRangeDots[element] then
+				for i = 1, 4 do
+					if self.partyRangeDots[element][i] then
+						self.partyRangeDots[element][i]:Hide()
+					end
+				end
+			end
+		end
+		return
+	end
+
+	-- Build list of units to check (party/raid members only, not player)
+	local partyUnits = {}
+	if IsInRaid() then
+		-- Find our subgroup number
+		local mySubgroup = 1
+		for i = 1, 40 do
+			local name, _, subgroup = GetRaidRosterInfo(i)
+			if name == UnitName("player") then
+				mySubgroup = subgroup
+				break
+			end
+		end
+		-- Find other members in our subgroup
+		local count = 0
+		for i = 1, 40 do
+			local name, _, subgroup = GetRaidRosterInfo(i)
+			if name and subgroup == mySubgroup and name ~= UnitName("player") then
+				count = count + 1
+				partyUnits[count] = "raid" .. i
+				if count >= 4 then break end
+			end
+		end
+	elseif IsInGroup() then
+		-- In a party, use party1-4
+		for i = 1, 4 do
+			if UnitExists("party" .. i) then
+				partyUnits[#partyUnits + 1] = "party" .. i
+			end
+		end
+	end
+	-- If solo, partyUnits is empty (no dots shown)
+
+	-- Update dots for each party member
+	for partyIndex = 1, 4 do
+		local unit = partyUnits[partyIndex]
+		local exists = unit and UnitExists(unit)
+
+		-- Get class color for this party member
+		local classColor = nil
+		if exists then
+			local _, class = UnitClass(unit)
+			if class and RAID_CLASS_COLORS[class] then
+				classColor = RAID_CLASS_COLORS[class]
+			end
+		end
+
+		-- Check each element
+		for element = 1, 4 do
+			local dot = self.partyRangeDots[element] and self.partyRangeDots[element][partyIndex]
+			if dot then
+				if not exists then
+					dot:Hide()
+				else
+					local slot = self.ElementToSlot[element]
+					local haveTotem = slot and GetTotemInfo(slot)
+
+					if haveTotem then
+						-- Totem is active - check if party member has the buff
+						local buffName = self:GetActiveTotemBuffName(element)
+						local hasBuff = buffName and self:UnitHasBuff(unit, buffName)
+
+						if hasBuff then
+							-- In range - show class-colored dot
+							if classColor then
+								dot:SetVertexColor(classColor.r, classColor.g, classColor.b)
+							else
+								dot:SetVertexColor(0, 1, 0)  -- Green
+							end
+						elseif buffName then
+							-- Has a buff to check but doesn't have it - out of range (red)
+							dot:SetVertexColor(1, 0, 0)
+						else
+							-- No buff to check (damage totem, etc.) - show class color
+							if classColor then
+								dot:SetVertexColor(classColor.r, classColor.g, classColor.b)
+							else
+								dot:SetVertexColor(0.5, 0.5, 0.5)  -- Gray
+							end
+						end
+						dot:Show()
+					else
+						-- No totem active for this element
+						dot:Hide()
+					end
+				end
+			end
+		end
+	end
+end
+
+-- ============================================================================
+-- Cooldown Tracker Bar (tracks shields, ankh, nature's swiftness, etc.)
+-- ============================================================================
+
+ShamanPower.cooldownBar = nil
+ShamanPower.cooldownButtons = {}
+
+-- Spells to track on the cooldown bar
+-- Format: {spellID, name, type} where type is "buff", "cooldown", or "shield"
+ShamanPower.TrackedCooldowns = {
+	{324, "Lightning Shield", "shield"},   -- Lightning/Water Shield (combined)
+	{20608, "Reincarnation", "cooldown"},  -- Ankh cooldown
+	{16188, "Nature's Swiftness", "cooldown"},  -- NS cooldown (Resto talent)
+	{16190, "Mana Tide Totem", "cooldown"},  -- Mana Tide cooldown (Resto talent)
+	{2825, "Bloodlust", "cooldown"},  -- Bloodlust (Horde)
+	{32182, "Heroism", "cooldown"},  -- Heroism (Alliance)
+}
+
+-- Shield spell IDs for the combined shield button
+ShamanPower.ShieldSpells = {
+	{324, "Lightning Shield"},   -- Lightning Shield
+	{24398, "Water Shield"},     -- Water Shield (TBC)
+}
+
+function ShamanPower:CreateCooldownBar()
+	if self.cooldownBar then return end
+	if not self.autoButton then return end
+
+	-- Create the cooldown bar frame
+	local bar = CreateFrame("Frame", "ShamanPowerCooldownBar", self.autoButton, "BackdropTemplate")
+	bar:SetBackdrop({
+		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true, tileSize = 16, edgeSize = 12,
+		insets = { left = 2, right = 2, top = 2, bottom = 2 }
+	})
+	bar:SetBackdropColor(0, 0, 0, 0.7)
+	bar:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+
+	self.cooldownBar = bar
+	self.cooldownButtons = {}
+
+	-- Create buttons for each tracked spell
+	local buttonSize = 22
+	local spacing = 8  -- Increased spacing to prevent cooldown text overlap
+	local padding = 4
+	local numButtons = 0
+
+	for i, spellData in ipairs(self.TrackedCooldowns) do
+		local spellID, spellName, spellType = spellData[1], spellData[2], spellData[3]
+		local name, _, icon = GetSpellInfo(spellID)
+
+		-- For shield type, check if player knows any shield spell
+		local knowsSpell = false
+		local defaultShieldSpell = nil
+		if spellType == "shield" then
+			-- Check preferred shield first
+			local preferredShield = self.opt.preferredShield or 1
+			local preferredData = self.ShieldSpells[preferredShield]
+			if preferredData and IsSpellKnown(preferredData[1]) then
+				knowsSpell = true
+				defaultShieldSpell = preferredData[1]
+				local sName, _, sIcon = GetSpellInfo(preferredData[1])
+				if sIcon then icon = sIcon end
+			else
+				-- Fall back to any known shield
+				for _, shieldData in ipairs(self.ShieldSpells) do
+					if IsSpellKnown(shieldData[1]) then
+						knowsSpell = true
+						defaultShieldSpell = shieldData[1]
+						local sName, _, sIcon = GetSpellInfo(shieldData[1])
+						if sIcon then icon = sIcon end
+						break
+					end
+				end
+			end
+		else
+			knowsSpell = name and IsSpellKnown(spellID)
+		end
+
+		-- Only create button if player knows this spell
+		if knowsSpell then
+			numButtons = numButtons + 1
+
+			-- Use SecureActionButtonTemplate for clickable buttons
+			local btn = CreateFrame("Button", "ShamanPowerCD" .. i, bar, "SecureActionButtonTemplate")
+			btn:SetSize(buttonSize, buttonSize)
+			btn:RegisterForClicks("AnyUp", "AnyDown")
+
+			local iconTex = btn:CreateTexture(nil, "ARTWORK")
+			iconTex:SetAllPoints()
+			iconTex:SetTexture(icon)
+			iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+			btn.icon = iconTex
+
+			-- Cooldown overlay
+			local cd = CreateFrame("Cooldown", "ShamanPowerCD" .. i .. "Cooldown", btn, "CooldownFrameTemplate")
+			cd:SetAllPoints()
+			cd:SetDrawEdge(false)
+			cd:SetDrawBling(false)
+			btn.cooldown = cd
+
+			-- Dark overlay for when buff is missing
+			local dark = btn:CreateTexture(nil, "OVERLAY")
+			dark:SetAllPoints()
+			dark:SetColorTexture(0, 0, 0, 0.6)
+			dark:Hide()
+			btn.darkOverlay = dark
+
+			-- Charge count text for shield buttons (bottom right corner)
+			if spellType == "shield" then
+				local chargeText = btn:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+				chargeText:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
+				chargeText:SetText("")
+				btn.chargeText = chargeText
+			end
+
+			-- Store spell info
+			btn.spellID = spellID
+			btn.spellName = spellName
+			btn.spellType = spellType
+			btn.defaultShieldSpell = defaultShieldSpell
+
+			-- Set up click action
+			if spellType == "shield" then
+				-- Shield button casts the preferred shield
+				local shieldSpellName = GetSpellInfo(defaultShieldSpell)
+				if shieldSpellName then
+					btn:SetAttribute("type1", "spell")
+					btn:SetAttribute("spell1", shieldSpellName)
+				end
+			else
+				-- Regular cooldown buttons cast their spell
+				local castSpellName = GetSpellInfo(spellID)
+				if castSpellName then
+					btn:SetAttribute("type1", "spell")
+					btn:SetAttribute("spell1", castSpellName)
+				end
+			end
+
+			-- Tooltip
+			btn:SetScript("OnEnter", function(self)
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				if self.activeShieldID then
+					GameTooltip:SetSpellByID(self.activeShieldID)
+				elseif self.spellType == "shield" and self.defaultShieldSpell then
+					GameTooltip:SetSpellByID(self.defaultShieldSpell)
+				else
+					GameTooltip:SetSpellByID(self.spellID)
+				end
+				GameTooltip:Show()
+			end)
+			btn:SetScript("OnLeave", function()
+				GameTooltip:Hide()
+			end)
+
+			self.cooldownButtons[numButtons] = btn
+		end
+	end
+
+	-- Store layout parameters for later use
+	bar.buttonSize = buttonSize
+	bar.spacing = spacing
+	bar.padding = padding
+	bar.numButtons = numButtons
+
+	-- Initial sizing will be done in UpdateCooldownBarLayout
+	if numButtons == 0 then
+		bar:SetSize(1, 1)
+	end
+
+	-- Start the update timer
+	if not self.cooldownUpdateFrame then
+		self.cooldownUpdateFrame = CreateFrame("Frame")
+		self.cooldownUpdateFrame.elapsed = 0
+		self.cooldownUpdateFrame:SetScript("OnUpdate", function(frame, elapsed)
+			frame.elapsed = frame.elapsed + elapsed
+			if frame.elapsed < 0.2 then return end
+			frame.elapsed = 0
+			ShamanPower:UpdateCooldownButtons()
+		end)
+	end
+end
+
+-- Update cooldown bar layout (horizontal or vertical)
+function ShamanPower:UpdateCooldownBarLayout()
+	if not self.cooldownBar then return end
+	if #self.cooldownButtons == 0 then return end
+
+	local bar = self.cooldownBar
+	local buttonSize = bar.buttonSize or 22
+	local spacing = bar.spacing or 8
+	local padding = bar.padding or 4
+	local numButtons = #self.cooldownButtons
+	local isVertical = (self.opt.layout == "Vertical")
+
+	if isVertical then
+		-- Vertical: stack buttons top to bottom
+		local barHeight = (buttonSize * numButtons) + (spacing * (numButtons - 1)) + (padding * 2)
+		bar:SetSize(buttonSize + (padding * 2), barHeight)
+
+		for i, btn in ipairs(self.cooldownButtons) do
+			btn:ClearAllPoints()
+			btn:SetPoint("TOP", bar, "TOP", 0, -padding - (i - 1) * (buttonSize + spacing))
+		end
+	else
+		-- Horizontal: buttons left to right
+		local barWidth = (buttonSize * numButtons) + (spacing * (numButtons - 1)) + (padding * 2)
+		bar:SetSize(barWidth, buttonSize + (padding * 2))
+
+		for i, btn in ipairs(self.cooldownButtons) do
+			btn:ClearAllPoints()
+			btn:SetPoint("LEFT", bar, "LEFT", padding + (i - 1) * (buttonSize + spacing), 0)
+		end
+	end
+end
+
+function ShamanPower:UpdateCooldownButtons()
+	for _, btn in ipairs(self.cooldownButtons) do
+		if btn.spellType == "shield" then
+			-- Check if any shield is active
+			local hasShield = false
+			local activeShieldID = nil
+			local activeShieldIcon = nil
+
+			local shieldCharges = 0
+			for _, shieldData in ipairs(self.ShieldSpells) do
+				local shieldID, shieldName = shieldData[1], shieldData[2]
+				-- Use UnitBuff to get charges (count)
+				for i = 1, 40 do
+					local name, icon, count = UnitBuff("player", i)
+					if not name then break end
+					if name == shieldName then
+						hasShield = true
+						activeShieldID = shieldID
+						activeShieldIcon = icon
+						shieldCharges = count or 0
+						break
+					end
+				end
+				if hasShield then break end
+			end
+
+			if hasShield then
+				btn.darkOverlay:Hide()
+				btn.icon:SetDesaturated(false)
+				if activeShieldIcon then
+					btn.icon:SetTexture(activeShieldIcon)
+				end
+				btn.activeShieldID = activeShieldID
+				-- Show charge count
+				if btn.chargeText then
+					if shieldCharges > 0 then
+						btn.chargeText:SetText(tostring(shieldCharges))
+					else
+						btn.chargeText:SetText("")
+					end
+				end
+			else
+				btn.darkOverlay:Show()
+				btn.icon:SetDesaturated(true)
+				btn.activeShieldID = nil
+				-- Clear charge count when no shield
+				if btn.chargeText then
+					btn.chargeText:SetText("")
+				end
+			end
+			btn.cooldown:Clear()
+
+		elseif btn.spellType == "cooldown" then
+			-- Check cooldown
+			local start, duration, enabled = GetSpellCooldown(btn.spellID)
+			if start and start > 0 and duration > 1.5 then
+				btn.cooldown:SetCooldown(start, duration)
+				btn.darkOverlay:Hide()
+				btn.icon:SetDesaturated(false)
+			else
+				btn.cooldown:Clear()
+				btn.darkOverlay:Hide()
+				btn.icon:SetDesaturated(false)
+			end
+		end
+	end
+end
+
+function ShamanPower:UpdateCooldownBar()
+	if not self.cooldownBar then
+		self:CreateCooldownBar()
+	end
+
+	if not self.cooldownBar then return end
+
+	if self.opt.showCooldownBar and #self.cooldownButtons > 0 then
+		-- Update the button layout first
+		self:UpdateCooldownBarLayout()
+
+		-- Position based on layout orientation
+		local isVertical = (self.opt.layout == "Vertical")
+		self.cooldownBar:ClearAllPoints()
+		if isVertical then
+			-- Vertical: position to the left of the main totem bar
+			self.cooldownBar:SetPoint("RIGHT", self.autoButton, "LEFT", -2, 0)
+		else
+			-- Horizontal: position below the main totem bar
+			self.cooldownBar:SetPoint("TOP", self.autoButton, "BOTTOM", 0, -2)
+		end
+		self.cooldownBar:Show()
+		self.cooldownUpdateFrame:Show()
+	else
+		self.cooldownBar:Hide()
+		if self.cooldownUpdateFrame then
+			self.cooldownUpdateFrame:Hide()
+		end
+	end
+end
+
+function ShamanPower:RecreateCooldownBar()
+	if InCombatLockdown() then return end
+
+	-- Destroy existing cooldown bar
+	if self.cooldownBar then
+		self.cooldownBar:Hide()
+		self.cooldownBar:SetParent(nil)
+		self.cooldownBar = nil
+	end
+	self.cooldownButtons = {}
+
+	-- Recreate it
+	self:CreateCooldownBar()
+	self:UpdateCooldownBar()
+end
+
+-- ============================================================================
 -- Mini Totem Bar (built-in totem buttons when TotemTimers is not used)
 -- ============================================================================
 
@@ -1309,15 +1884,26 @@ function ShamanPower:UpdateMiniTotemBar()
 				totemButton:SetPoint("TOPLEFT", self.autoButton, "TOPLEFT", padding, -padding - (element - 1) * (buttonSize + spacing))
 			end
 
-			-- Set up the button to cast the totem
+			-- Set up the button: left-click casts totem, right-click destroys it
 			totemButton:RegisterForClicks("AnyUp", "AnyDown")
+
+			-- Clear old attributes first
+			totemButton:SetAttribute("type", nil)
+			totemButton:SetAttribute("spell", nil)
+
+			-- Left-click: cast totem
 			if spellName then
-				totemButton:SetAttribute("type", "spell")
-				totemButton:SetAttribute("spell", spellName)
+				totemButton:SetAttribute("type1", "spell")
+				totemButton:SetAttribute("spell1", spellName)
 			else
-				totemButton:SetAttribute("type", nil)
-				totemButton:SetAttribute("spell", nil)
+				totemButton:SetAttribute("type1", nil)
+				totemButton:SetAttribute("spell1", nil)
 			end
+
+			-- Right-click: destroy totem (using macro to call DestroyTotem)
+			local slot = self.ElementToSlot[element]
+			totemButton:SetAttribute("type2", "macro")
+			totemButton:SetAttribute("macrotext2", "/run DestroyTotem(" .. slot .. ")")
 		end
 	end
 
@@ -1372,6 +1958,12 @@ function ShamanPower:UpdateMiniTotemBar()
 
 	-- Setup pulse overlays for totems like Tremor
 	self:SetupPulseOverlays()
+
+	-- Setup party range dots
+	self:SetupPartyRangeDots()
+
+	-- Setup cooldown tracker bar
+	self:UpdateCooldownBar()
 end
 
 -- Tooltip for mini totem bar buttons

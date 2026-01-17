@@ -1265,6 +1265,8 @@ end
 ShamanPower.partyRangeDots = {}  -- [element][partyIndex] = dot texture
 
 -- Buff names that totems apply to party members (used for range detection)
+-- Use partial names to match more reliably across different versions/localizations
+-- NOTE: Some totems (like Windfury) don't apply visible buffs detectable via UnitBuff
 ShamanPower.TotemBuffNames = {
 	[1] = {  -- Earth
 		[1] = "Strength of Earth",
@@ -1273,7 +1275,7 @@ ShamanPower.TotemBuffNames = {
 	},
 	[2] = {  -- Fire
 		[1] = "Totem of Wrath",
-		[5] = "Flametongue Totem",
+		[5] = "Flametongue",
 		[6] = "Frost Resistance",
 		-- Searing, Magma, Fire Nova are damage totems with no party buff
 	},
@@ -1285,7 +1287,7 @@ ShamanPower.TotemBuffNames = {
 		-- Poison/Disease cleansing don't have visible buffs
 	},
 	[4] = {  -- Air
-		[1] = "Windfury Totem",
+		-- [1] = Windfury Totem - NO visible buff, gives melee proc chance
 		[2] = "Grace of Air",
 		[3] = "Wrath of Air",
 		[4] = "Tranquil Air",
@@ -1357,23 +1359,29 @@ function ShamanPower:GetActiveTotemBuffName(element)
 	local haveTotem, totemName = GetTotemInfo(slot)
 	if not haveTotem or not totemName then return nil end
 
-	-- Match totem name to buff name
-	local assignments = ShamanPower_Assignments[self.player]
-	if not assignments then return nil end
-
-	local totemIndex = assignments[element]
-	if not totemIndex or totemIndex == 0 then return nil end
-
-	-- Return the buff name for this totem type
 	local buffNames = self.TotemBuffNames[element]
-	if buffNames and buffNames[totemIndex] then
-		return buffNames[totemIndex]
+	if not buffNames then return nil end
+
+	-- First try: match based on assignments
+	local assignments = ShamanPower_Assignments[self.player]
+	if assignments then
+		local totemIndex = assignments[element]
+		if totemIndex and totemIndex > 0 and buffNames[totemIndex] then
+			return buffNames[totemIndex]
+		end
 	end
 
-	-- Fallback: try to match based on totem name
-	for pattern, buffName in pairs(buffNames or {}) do
-		if type(buffName) == "string" and totemName:find(buffName) then
-			return buffName
+	-- Second try: match based on actual totem name from GetTotemInfo
+	-- Strip rank number from totem name for matching (e.g., "Windfury Totem VII" -> "Windfury Totem")
+	local totemBaseName = totemName:gsub("%s+[IVXLCDM]+$", ""):gsub("%s+%d+$", "")
+
+	for _, buffName in pairs(buffNames) do
+		if type(buffName) == "string" then
+			-- Check if totem name contains the buff search term
+			if totemBaseName:lower():find(buffName:lower(), 1, true) or
+			   totemName:lower():find(buffName:lower(), 1, true) then
+				return buffName
+			end
 		end
 	end
 
@@ -1384,10 +1392,14 @@ end
 function ShamanPower:UnitHasBuff(unit, buffName)
 	if not buffName then return false end
 
+	-- Convert to lowercase for case-insensitive matching
+	local searchLower = buffName:lower()
+
 	for i = 1, 40 do
 		local name = UnitBuff(unit, i)
 		if not name then break end
-		if name:find(buffName) then
+		-- Case-insensitive partial match
+		if name:lower():find(searchLower, 1, true) then
 			return true
 		end
 	end

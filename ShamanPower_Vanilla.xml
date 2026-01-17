@@ -483,7 +483,7 @@
 	</Button>
 
 	<!-- PallyPower Blessing Assignments -->
-	<Button name = "ClassButtonTemplate" hidden = "false" virtual = "true">
+	<Button name = "ShamanPowerClassButtonTemplate" hidden = "false" virtual = "true">
 		<Size>
 			<AbsDimension x = "84" y = "80"/>
 		</Size>
@@ -510,7 +510,7 @@
 		</Scripts>
 	</Button>
 
-	<Button name = "PlayerButtonTemplate" hidden = "false" frameStrata = "DIALOG" virtual = "true">
+	<Button name = "ShamanPowerPlayerButtonTemplate" hidden = "false" frameStrata = "DIALOG" virtual = "true">
 		<Size>
 			<AbsDimension x = "84" y = "13"/>
 		</Size>
@@ -556,7 +556,7 @@
 		</Scripts>
 	</Button>
 
-	<Frame name = "ClassGroupTemplate" hidden = "false" virtual = "true">
+	<Frame name = "ShamanPowerClassGroupTemplate" hidden = "false" virtual = "true">
 		<Size>
 			<AbsDimension x = "84" y = "80"/>
 		</Size>
@@ -577,7 +577,7 @@
 			</Layer>
 		</Layers>
 		<Frames>
-			<Button name = "$parentClassButton" inherits = "ClassButtonTemplate">
+			<Button name = "$parentClassButton" inherits = "ShamanPowerClassButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -586,7 +586,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton1" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton1" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -595,7 +595,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton2" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton2" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -604,7 +604,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton3" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton3" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -613,7 +613,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton4" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton4" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -622,7 +622,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton5" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton5" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -631,7 +631,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton6" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton6" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -640,7 +640,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton7" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton7" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -649,7 +649,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton8" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton8" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -658,7 +658,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton9" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton9" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -667,7 +667,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton10" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton10" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -676,7 +676,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton11" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton11" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -685,7 +685,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton12" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton12" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -694,7 +694,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton13" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton13" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -703,7 +703,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton14" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton14" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -712,7 +712,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentPlayerButton15" inherits = "PlayerButtonTemplate">
+			<Button name = "$parentPlayerButton15" inherits = "ShamanPowerPlayerButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -724,7 +724,7 @@
 		</Frames>
 	</Frame>
 
-	<Button name = "BuffGridButtonTemplate" hidden = "false" enableMouse = "true" virtual = "true">
+	<Button name = "ShamanPowerBuffGridButtonTemplate" hidden = "false" enableMouse = "true" virtual = "true">
 		<Size>
 			<AbsDimension x = "84" y = "100"/>
 		</Size>
@@ -772,7 +772,7 @@
 		</Scripts>
 	</Button>
 
-	<Button name = "AuraHeaderTemplate" hidden = "false" virtual = "true">
+	<Button name = "ShamanPowerAuraHeaderTemplate" hidden = "false" virtual = "true">
 		<Size>
 			<AbsDimension x = "84" y = "80"/>
 		</Size>
@@ -799,7 +799,7 @@
 		</Scripts>
 	</Button>
 
-	<Frame name = "AuraGroupTemplate" hidden = "false" virtual = "true">
+	<Frame name = "ShamanPowerAuraGroupTemplate" hidden = "false" virtual = "true">
 		<Size>
 			<AbsDimension x = "84" y = "80"/>
 		</Size>
@@ -820,7 +820,7 @@
 			</Layer>
 		</Layers>
 		<Frames>
-			<Button name = "$parentAuraHeader" inherits = "AuraHeaderTemplate">
+			<Button name = "$parentAuraHeader" inherits = "ShamanPowerAuraHeaderTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -895,7 +895,7 @@
 		</Frames>
 	</Frame>
 
-	<Button name = "AuraGridButtonTemplate" hidden = "false" enableMouse = "true" virtual = "true">
+	<Button name = "ShamanPowerAuraGridButtonTemplate" hidden = "false" enableMouse = "true" virtual = "true">
 		<Size>
 			<AbsDimension x = "84" y = "100"/>
 		</Size>
@@ -943,7 +943,7 @@
 		</Scripts>
 	</Button>
 
-	<Frame name = "UserTemplate" hidden = "false" virtual = "true">
+	<Frame name = "ShamanPowerUserTemplate" hidden = "false" virtual = "true">
 		<Size>
 			<AbsDimension x = "995" y = "100"/>
 		</Size>
@@ -1368,7 +1368,7 @@
 			</Layer>
 		</Layers>
 		<Frames>
-			<Button name = "$parentAura1" inherits = "AuraGridButtonTemplate">
+			<Button name = "$parentAura1" inherits = "ShamanPowerAuraGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -1377,7 +1377,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass1" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass1" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentAura1" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1386,7 +1386,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass2" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass2" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClass1" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1395,7 +1395,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass3" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass3" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClass2" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1404,7 +1404,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass4" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass4" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClass3" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1413,7 +1413,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass5" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass5" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClass4" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1422,7 +1422,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass6" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass6" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClass5" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1431,7 +1431,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass7" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass7" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClass6" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1440,7 +1440,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass8" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass8" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClass7" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1449,7 +1449,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Button name = "$parentClass9" inherits = "BuffGridButtonTemplate">
+			<Button name = "$parentClass9" inherits = "ShamanPowerBuffGridButtonTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClass8" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1530,7 +1530,7 @@
 					</Anchor>
 				</Anchors>
 			</Button>
-			<Frame name = "$parentAuraGroup1" inherits = "AuraGroupTemplate">
+			<Frame name = "$parentAuraGroup1" inherits = "ShamanPowerAuraGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -1539,7 +1539,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup1" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup1" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentAuraGroup1" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1548,7 +1548,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup2" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup2" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClassGroup1" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1557,7 +1557,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup3" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup3" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClassGroup2" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1566,7 +1566,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup4" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup4" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClassGroup3" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1575,7 +1575,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup5" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup5" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClassGroup4" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1584,7 +1584,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup6" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup6" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClassGroup5" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1593,7 +1593,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup7" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup7" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClassGroup6" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1602,7 +1602,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup8" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup8" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClassGroup7" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1611,7 +1611,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentClassGroup9" inherits = "ClassGroupTemplate">
+			<Frame name = "$parentClassGroup9" inherits = "ShamanPowerClassGroupTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentClassGroup8" relativePoint = "TOPRIGHT">
 						<Offset>
@@ -1620,7 +1620,7 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer1" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer1" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT">
 						<Offset>
@@ -1629,72 +1629,72 @@
 					</Anchor>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer2" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer2" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer1" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer3" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer3" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer2" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer4" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer4" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer3" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer5" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer5" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer4" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer6" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer6" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer5" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer7" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer7" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer6" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer8" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer8" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer7" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer9" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer9" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer8" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer10" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer10" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer9" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer11" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer11" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer10" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer12" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer12" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer11" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer13" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer13" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer12" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer14" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer14" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer13" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>
 			</Frame>
-			<Frame name = "$parentPlayer15" inherits = "UserTemplate">
+			<Frame name = "$parentPlayer15" inherits = "ShamanPowerUserTemplate">
 				<Anchors>
 					<Anchor point = "TOPLEFT" relativeTo = "$parentPlayer14" relativePoint = "BOTTOMLEFT"/>
 				</Anchors>

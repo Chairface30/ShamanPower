@@ -1492,6 +1492,7 @@ ShamanPower.cooldownButtons = {}
 -- Format: {spellID, name, type} where type is "buff", "cooldown", or "shield"
 ShamanPower.TrackedCooldowns = {
 	{324, "Lightning Shield", "shield"},   -- Lightning/Water Shield (combined)
+	{36936, "Totemic Call", "cooldown"},  -- Totemic Call (recall totems)
 	{20608, "Reincarnation", "cooldown"},  -- Ankh cooldown
 	{16188, "Nature's Swiftness", "cooldown"},  -- NS cooldown (Resto talent)
 	{16190, "Mana Tide Totem", "cooldown"},  -- Mana Tide cooldown (Resto talent)
@@ -1964,6 +1965,9 @@ function ShamanPower:UpdateMiniTotemBar()
 
 	-- Setup cooldown tracker bar
 	self:UpdateCooldownBar()
+
+	-- Setup keybindings for the buttons
+	self:SetupKeybindings()
 end
 
 -- Tooltip for mini totem bar buttons
@@ -2199,8 +2203,9 @@ function ShamanPower:UpdateEarthShieldButton()
 		if spellName then
 			-- Set up the button to target and cast Earth Shield
 			-- Using a macro to target the player and cast
-			esBtn:SetAttribute("type", "macro")
-			esBtn:SetAttribute("macrotext", "/target " .. targetName .. "\n/cast " .. spellName .. "\n/targetlasttarget")
+			-- Use type1/macrotext1 for left-click (needed for /click macro to work)
+			esBtn:SetAttribute("type1", "macro")
+			esBtn:SetAttribute("macrotext1", "/target " .. targetName .. "\n/cast " .. spellName .. "\n/targetlasttarget")
 
 			-- Update icon
 			if esIcon then
@@ -6030,3 +6035,71 @@ function ShamanPower:AutoAssignAuras(precedence)
 		end
 	end
 end
+
+-- ============================================================================
+-- Keybinding Setup (using SetOverrideBindingClick for secure button clicks)
+-- ============================================================================
+
+-- Map binding names to button names
+ShamanPower.KeybindButtons = {
+	["SHAMANPOWER_DROPALL"] = "ShamanPowerAutoDropAll",
+	["SHAMANPOWER_EARTH_TOTEM"] = "ShamanPowerAutoTotem1",
+	["SHAMANPOWER_FIRE_TOTEM"] = "ShamanPowerAutoTotem2",
+	["SHAMANPOWER_WATER_TOTEM"] = "ShamanPowerAutoTotem3",
+	["SHAMANPOWER_AIR_TOTEM"] = "ShamanPowerAutoTotem4",
+	["SHAMANPOWER_EARTH_SHIELD"] = "ShamanPowerEarthShieldBtn",
+	["SHAMANPOWER_TOTEMIC_CALL"] = "ShamanPowerTotemicCallBtn",
+}
+
+-- Create a hidden button for Totemic Call keybind
+function ShamanPower:CreateTotemicCallButton()
+	if _G["ShamanPowerTotemicCallBtn"] then return end
+
+	local spellName = GetSpellInfo(36936)  -- Totemic Call
+	if not spellName or not IsSpellKnown(36936) then return end
+
+	local btn = CreateFrame("Button", "ShamanPowerTotemicCallBtn", UIParent, "SecureActionButtonTemplate")
+	btn:SetSize(1, 1)
+	btn:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+	btn:Hide()  -- Hidden, only used for keybind
+	btn:RegisterForClicks("AnyUp", "AnyDown")
+	btn:SetAttribute("type1", "spell")
+	btn:SetAttribute("spell1", spellName)
+end
+
+function ShamanPower:SetupKeybindings()
+	-- Need a frame to own the bindings
+	if not self.keybindFrame then
+		self.keybindFrame = CreateFrame("Frame", "ShamanPowerKeybindFrame", UIParent)
+	end
+
+	-- Create the Totemic Call button if it doesn't exist
+	self:CreateTotemicCallButton()
+
+	-- Clear any existing override bindings
+	ClearOverrideBindings(self.keybindFrame)
+
+	-- Set up override bindings for each keybind
+	for bindingName, buttonName in pairs(self.KeybindButtons) do
+		local key1, key2 = GetBindingKey(bindingName)
+		if key1 then
+			SetOverrideBindingClick(self.keybindFrame, false, key1, buttonName, "LeftButton")
+		end
+		if key2 then
+			SetOverrideBindingClick(self.keybindFrame, false, key2, buttonName, "LeftButton")
+		end
+	end
+end
+
+-- Register for binding updates
+local keybindEventFrame = CreateFrame("Frame")
+keybindEventFrame:RegisterEvent("UPDATE_BINDINGS")
+keybindEventFrame:RegisterEvent("PLAYER_LOGIN")
+keybindEventFrame:SetScript("OnEvent", function(self, event)
+	-- Delay slightly to ensure buttons exist
+	C_Timer.After(0.5, function()
+		if ShamanPower.SetupKeybindings then
+			ShamanPower:SetupKeybindings()
+		end
+	end)
+end)

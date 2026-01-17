@@ -10,6 +10,16 @@ SHAMANPOWER_PRESET = "Preset"
 SHAMANPOWER_REPORT = "Report"
 SHAMANPOWER_FREEASSIGN = "Free Assignment"
 
+-- Keybinding names (displayed in WoW's keybinding menu)
+BINDING_HEADER_SHAMANPOWER = "ShamanPower"
+BINDING_NAME_SHAMANPOWER_DROPALL = "Drop All Totems"
+BINDING_NAME_SHAMANPOWER_EARTH_TOTEM = "Cast Assigned Earth Totem"
+BINDING_NAME_SHAMANPOWER_FIRE_TOTEM = "Cast Assigned Fire Totem"
+BINDING_NAME_SHAMANPOWER_WATER_TOTEM = "Cast Assigned Water Totem"
+BINDING_NAME_SHAMANPOWER_AIR_TOTEM = "Cast Assigned Air Totem"
+BINDING_NAME_SHAMANPOWER_EARTH_SHIELD = "Cast Earth Shield on Assigned Target"
+BINDING_NAME_SHAMANPOWER_TOTEMIC_CALL = "Totemic Call (Recall Totems)"
+
 -- Tooltip descriptions
 SHAMANPOWER_REFRESH_DESC = "Refresh the shaman list"
 SHAMANPOWER_CLEAR_DESC = "Clear all totem assignments"

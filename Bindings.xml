@@ -1,8 +1,9 @@
 <Bindings>
-	<Binding name="SHAMANPOWER_AUTOKEY1" category="SHAMANPOWER_KEYCAT">
-		ShamanPower:AutoDrop("ShamanPowerAuto", "Hotkey1")
-	</Binding>
-	<Binding name="SHAMANPOWER_AUTOKEY2" category="SHAMANPOWER_KEYCAT">
-		ShamanPower:AutoDrop("ShamanPowerAuto", "Hotkey2")
-	</Binding>
+	<Binding name="SHAMANPOWER_DROPALL" category="SHAMANPOWER" header="SHAMANPOWER">--[[dummy]]</Binding>
+	<Binding name="SHAMANPOWER_EARTH_TOTEM" category="SHAMANPOWER">--[[dummy]]</Binding>
+	<Binding name="SHAMANPOWER_FIRE_TOTEM" category="SHAMANPOWER">--[[dummy]]</Binding>
+	<Binding name="SHAMANPOWER_WATER_TOTEM" category="SHAMANPOWER">--[[dummy]]</Binding>
+	<Binding name="SHAMANPOWER_AIR_TOTEM" category="SHAMANPOWER">--[[dummy]]</Binding>
+	<Binding name="SHAMANPOWER_EARTH_SHIELD" category="SHAMANPOWER">--[[dummy]]</Binding>
+	<Binding name="SHAMANPOWER_TOTEMIC_CALL" category="SHAMANPOWER">--[[dummy]]</Binding>
 </Bindings>

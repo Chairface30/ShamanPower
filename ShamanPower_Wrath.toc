@@ -16,6 +16,8 @@
 embeds.xml
 #@end-no-lib-strip@
 
+Bindings.xml
+
 locale\enUS.lua
 
 ShamanPower.lua

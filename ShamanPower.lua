@@ -1115,6 +1115,130 @@ function ShamanPower:GetTotemStatus()
 end
 
 -- ============================================================================
+-- Totem Pulse Overlay (visual pulse for totems like Tremor)
+-- ============================================================================
+
+ShamanPower.pulseOverlays = {}
+
+function ShamanPower:CreatePulseOverlay(button)
+	if not button then return nil end
+
+	local container = { glows = {} }
+
+	-- Create multiple layered glows for more intensity
+	for i = 1, 3 do
+		local glow = button:CreateTexture(nil, "OVERLAY", nil, 7)
+		local offset = 6 + (i * 4)  -- 10, 14, 18 pixel offsets
+		glow:SetPoint("TOPLEFT", button, "TOPLEFT", -offset, offset)
+		glow:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", offset, -offset)
+		glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+		glow:SetBlendMode("ADD")
+		glow:SetVertexColor(0.4, 1, 0.4)  -- Bright green
+		glow:SetAlpha(0)
+		container.glows[i] = glow
+	end
+
+	container.SetAlpha = function(self, alpha)
+		for i, glow in ipairs(self.glows) do
+			glow:SetAlpha(alpha * (1.1 - i * 0.2))  -- Inner glows brighter
+		end
+	end
+
+	container.Show = function(self)
+		for _, glow in ipairs(self.glows) do glow:Show() end
+	end
+
+	container.Hide = function(self)
+		for _, glow in ipairs(self.glows) do glow:Hide() end
+	end
+
+	return container
+end
+
+-- Pulsing totem data: totemName pattern -> { element, interval }
+ShamanPower.PulsingTotems = {
+	-- Earth totems (element 1, slot 2)
+	["Tremor"] = { element = 1, slot = 2, interval = 3 },
+	["Earthbind"] = { element = 1, slot = 2, interval = 3 },
+	-- Water totems (element 3, slot 3)
+	["Poison Cleansing"] = { element = 3, slot = 3, interval = 5 },
+	["Disease Cleansing"] = { element = 3, slot = 3, interval = 5 },
+}
+
+function ShamanPower:GetActivePulsingTotem(slot)
+	local haveTotem, totemName, startTime, duration = GetTotemInfo(slot)
+	if haveTotem and totemName then
+		for pattern, data in pairs(self.PulsingTotems) do
+			if data.slot == slot and totemName:find(pattern) then
+				return data, startTime, duration
+			end
+		end
+	end
+	return nil, nil, nil
+end
+
+function ShamanPower:SetupPulseOverlays()
+	-- Create pulse overlays for Earth (1) and Water (3) totem buttons
+	local elements = {1, 3}  -- Earth and Water can have pulsing totems
+	for _, element in ipairs(elements) do
+		local button = _G["ShamanPowerAutoTotem" .. element]
+		if button and not self.pulseOverlays[element] then
+			self.pulseOverlays[element] = self:CreatePulseOverlay(button)
+		end
+	end
+
+	-- Start continuous pulse tracking
+	if not self.pulseFrame then
+		self.pulseFrame = CreateFrame("Frame")
+
+		self.pulseFrame:SetScript("OnUpdate", function(frame, elapsed)
+			-- Check Earth totem (slot 2)
+			local earthData, earthStart = ShamanPower:GetActivePulsingTotem(2)
+			ShamanPower:UpdatePulseGlow(1, earthData, earthStart)
+
+			-- Check Water totem (slot 3)
+			local waterData, waterStart = ShamanPower:GetActivePulsingTotem(3)
+			ShamanPower:UpdatePulseGlow(3, waterData, waterStart)
+		end)
+		self.pulseFrame:Show()
+	end
+end
+
+function ShamanPower:UpdatePulseGlow(element, totemData, startTime)
+	local glow = self.pulseOverlays[element]
+	if not glow then return end
+
+	if totemData and startTime then
+		local now = GetTime()
+		local totemAge = now - startTime
+		local pulseInterval = totemData.interval
+
+		-- Calculate position within current pulse cycle (0 to 1)
+		local cyclePos = (totemAge % pulseInterval) / pulseInterval
+
+		-- Pulse brightens at the start of each cycle
+		local alpha
+		if cyclePos < 0.15 then
+			-- Quick flash at pulse point
+			alpha = 1 - (cyclePos / 0.15)
+		else
+			alpha = 0
+		end
+
+		if alpha > 0 then
+			glow:SetAlpha(alpha * 0.9)
+			glow:Show()
+		else
+			glow:SetAlpha(0)
+			glow:Hide()
+		end
+	else
+		glow:SetAlpha(0)
+		glow:Hide()
+	end
+end
+
+-- ============================================================================
 -- Mini Totem Bar (built-in totem buttons when TotemTimers is not used)
 -- ============================================================================
 
@@ -1245,6 +1369,9 @@ function ShamanPower:UpdateMiniTotemBar()
 
 	-- Update Earth Shield button (if shaman has ES and a target assigned)
 	self:UpdateEarthShieldButton()
+
+	-- Setup pulse overlays for totems like Tremor
+	self:SetupPulseOverlays()
 end
 
 -- Tooltip for mini totem bar buttons

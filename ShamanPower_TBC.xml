@@ -2075,13 +2075,41 @@
 						GameTooltip:Hide(self, motion);
 					</OnLeave>
 				</Scripts>
-			</Button>			
-			<Button name = "$parentPreset" inherits = "UIPanelButtonTemplate" text = "Preset" hidden = "false">
+			</Button>
+			<Button name = "$parentRaidCDs" inherits = "UIPanelButtonTemplate" text = "Raid CDs" hidden = "false">
+				<Size>
+					<AbsDimension x = "70" y = "22"/>
+				</Size>
+				<Anchors>
+					<Anchor point = "BOTTOMRIGHT" relativeTo = "$parentOptions" relativePoint = "BOTTOMLEFT">
+						<Offset>
+							<AbsDimension x = "-4" y = "0"/>
+						</Offset>
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						ShamanPower:ToggleRaidCooldownPanel();
+					</OnClick>
+					<OnEnter>
+						if ShamanPower.opt.ShowTooltips then
+							GameTooltip:SetOwner(self, "ANCHOR_BOTTOM");
+							GameTooltip:SetText("Open Raid Cooldown Coordination panel");
+							GameTooltip:Show(self, motion);
+							CursorUpdate(self, motion);
+						end
+					</OnEnter>
+					<OnLeave>
+						GameTooltip:Hide(self, motion);
+					</OnLeave>
+				</Scripts>
+			</Button>
+			<Button name = "$parentPreset" inherits = "UIPanelButtonTemplate" text = "Preset" hidden = "true">
 				<Size>
 					<AbsDimension x = "60" y = "22"/>
 				</Size>
 				<Anchors>
-					<Anchor point = "BOTTOMRIGHT" relativeTo = "$parentOptions" relativePoint = "BOTTOMLEFT">
+					<Anchor point = "BOTTOMRIGHT" relativeTo = "$parentRaidCDs" relativePoint = "BOTTOMLEFT">
 						<Offset>
 							<AbsDimension x = "-4" y = "0"/>
 						</Offset>
@@ -2109,7 +2137,7 @@
 					</OnLeave>
 				</Scripts>
 			</Button>
-			<Button name = "$parentReport" inherits = "UIPanelButtonTemplate" text = "Report" hidden = "false">
+			<Button name = "$parentReport" inherits = "UIPanelButtonTemplate" text = "Report" hidden = "true">
 				<Size>
 					<AbsDimension x = "60" y = "22"/>
 				</Size>
@@ -2141,11 +2169,14 @@
 					</OnLeave>
 				</Scripts>
 			</Button>
-			<CheckButton name = "$parentFreeAssign" inherits = "OptionsBaseCheckButtonTemplate">
+			<CheckButton name = "$parentFreeAssign" inherits = "UICheckButtonTemplate">
+				<Size>
+					<AbsDimension x = "20" y = "20"/>
+				</Size>
 				<Anchors>
-					<Anchor point = "BOTTOMLEFT">
+					<Anchor point = "TOPLEFT">
 						<Offset>
-							<AbsDimension x = "4" y = "28"/>
+							<AbsDimension x = "4" y = "-4"/>
 						</Offset>
 					</Anchor>
 				</Anchors>
@@ -2185,9 +2216,9 @@
 						<AbsDimension x = "100" y = "16"/>
 					</Size>
 					<Anchors>
-						<Anchor point = "BOTTOMLEFT" relativeTo = "ShamanPowerBlessingsFrame" relativePoint = "BOTTOMLEFT">
+						<Anchor point = "LEFT" relativeTo = "$parentFreeAssign" relativePoint = "RIGHT">
 							<Offset>
-								<AbsDimension x = "33" y = "35"/>
+								<AbsDimension x = "2" y = "0"/>
 							</Offset>
 						</Anchor>
 					</Anchors>

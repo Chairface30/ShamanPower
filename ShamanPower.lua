@@ -1715,6 +1715,93 @@ function ShamanPower:UpdatePartyRangeDots()
 end
 
 -- ============================================================================
+-- Totem Duration Progress Bar (shows time remaining on totems)
+-- ============================================================================
+
+ShamanPower.totemProgressBars = {}  -- Progress bar textures for each element
+
+-- Create progress bars for totem buttons
+function ShamanPower:SetupTotemProgressBars()
+	for element = 1, 4 do
+		local totemButton = _G["ShamanPowerAutoTotem" .. element]
+		if totemButton and not self.totemProgressBars[element] then
+			-- Background (dark) - positioned below the button
+			local bgBar = totemButton:CreateTexture(nil, "OVERLAY")
+			bgBar:SetColorTexture(0, 0, 0, 0.7)
+			bgBar:SetHeight(3)
+			bgBar:SetPoint("TOPLEFT", totemButton, "BOTTOMLEFT", 0, -1)
+			bgBar:SetPoint("TOPRIGHT", totemButton, "BOTTOMRIGHT", 0, -1)
+			bgBar:Hide()
+
+			-- Progress bar (colored) - positioned below the button
+			local progressBar = totemButton:CreateTexture(nil, "OVERLAY", nil, 1)
+			progressBar:SetHeight(3)
+			progressBar:SetPoint("TOPLEFT", totemButton, "BOTTOMLEFT", 0, -1)
+			-- Color by element: Earth=green, Fire=red, Water=blue, Air=white
+			local colors = {
+				[1] = {0.2, 0.8, 0.2},  -- Earth - green
+				[2] = {0.9, 0.3, 0.1},  -- Fire - orange/red
+				[3] = {0.2, 0.5, 0.9},  -- Water - blue
+				[4] = {0.8, 0.8, 0.8},  -- Air - white/gray
+			}
+			progressBar:SetColorTexture(colors[element][1], colors[element][2], colors[element][3], 1)
+			progressBar:Hide()
+
+			self.totemProgressBars[element] = {
+				bg = bgBar,
+				bar = progressBar,
+				maxWidth = totemButton:GetWidth() - 2
+			}
+		end
+	end
+
+	-- Create OnUpdate frame for smooth progress bar animation
+	if not self.progressBarFrame then
+		self.progressBarFrame = CreateFrame("Frame")
+		self.progressBarFrame.elapsed = 0
+
+		self.progressBarFrame:SetScript("OnUpdate", function(frame, elapsed)
+			frame.elapsed = frame.elapsed + elapsed
+			if frame.elapsed < 0.1 then return end  -- Update every 0.1 seconds for smooth animation
+			frame.elapsed = 0
+
+			ShamanPower:UpdateTotemProgressBars()
+		end)
+		self.progressBarFrame:Show()
+	end
+end
+
+-- Update progress bars based on totem duration
+function ShamanPower:UpdateTotemProgressBars()
+	for element = 1, 4 do
+		local bars = self.totemProgressBars[element]
+		if bars then
+			local slot = self.ElementToSlot[element]
+			local haveTotem, totemName, startTime, duration = GetTotemInfo(slot)
+
+			if haveTotem and duration and duration > 0 then
+				local remaining = (startTime + duration) - GetTime()
+				local pct = remaining / duration
+
+				if pct > 0 and pct <= 1 then
+					-- Update bar width based on remaining time
+					local width = bars.maxWidth * pct
+					bars.bar:SetWidth(math.max(1, width))
+					bars.bg:Show()
+					bars.bar:Show()
+				else
+					bars.bg:Hide()
+					bars.bar:Hide()
+				end
+			else
+				bars.bg:Hide()
+				bars.bar:Hide()
+			end
+		end
+	end
+end
+
+-- ============================================================================
 -- Player Totem Range Indicator (greys out icon if out of range of own totem)
 -- ============================================================================
 
@@ -2246,6 +2333,9 @@ function ShamanPower:UpdateMiniTotemBar()
 
 	-- Setup party range dots
 	self:SetupPartyRangeDots()
+
+	-- Setup totem duration progress bars
+	self:SetupTotemProgressBars()
 
 	-- Setup cooldown tracker bar
 	self:UpdateCooldownBar()

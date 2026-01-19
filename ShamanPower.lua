@@ -1546,6 +1546,7 @@ function ShamanPower:SetupPartyRangeDots()
 			frame.elapsed = 0
 
 			ShamanPower:UpdatePartyRangeDots()
+			ShamanPower:UpdatePlayerTotemRange()
 		end)
 		self.partyRangeFrame:Show()
 	end
@@ -1708,6 +1709,38 @@ function ShamanPower:UpdatePartyRangeDots()
 						dot:Hide()
 					end
 				end
+			end
+		end
+	end
+end
+
+-- ============================================================================
+-- Player Totem Range Indicator (greys out icon if out of range of own totem)
+-- ============================================================================
+
+-- Update player's own totem range (desaturate icons when out of range)
+function ShamanPower:UpdatePlayerTotemRange()
+	for element = 1, 4 do
+		local iconTexture = _G["ShamanPowerAutoTotem" .. element .. "Icon"]
+		if iconTexture then
+			local slot = self.ElementToSlot[element]
+			local haveTotem = slot and GetTotemInfo(slot)
+
+			if haveTotem then
+				-- Totem is active - check if player has the buff
+				local buffName = self:GetActiveTotemBuffName(element)
+
+				if buffName then
+					local hasBuff = self:UnitHasBuff("player", buffName)
+					-- Desaturate (grey out) if out of range
+					iconTexture:SetDesaturated(not hasBuff)
+				else
+					-- Damage totem or no trackable buff - show normal
+					iconTexture:SetDesaturated(false)
+				end
+			else
+				-- No totem active - show normal (not greyed)
+				iconTexture:SetDesaturated(false)
 			end
 		end
 	end

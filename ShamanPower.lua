@@ -1773,23 +1773,50 @@ function ShamanPower:UpdatePartyRangeDots()
 					if useOverlay and mainDot then mainDot:Hide() end
 				else
 					local slot = self.ElementToSlot[element]
-					local haveTotem = slot and GetTotemInfo(slot)
+					local haveTotem, totemName = GetTotemInfo(slot)
 
 					if haveTotem then
 						-- Totem is active - check if party member has the buff
 						local buffName = self:GetActiveTotemBuffName(element)
 						local hasBuff = buffName and self:UnitHasBuff(unit, buffName)
 
-						if hasBuff then
+						-- Special case: Air element (4) with no buffName = Windfury Totem
+						-- Windfury doesn't give a visible buff, only a weapon enchant
+						-- Use reported weapon enchant data from other players
+						local isWindfury = (element == 4 and not buffName)
+						if isWindfury then
+							local playerName = UnitName(unit)
+							local wfStatus = self:IsPlayerInWindfuryRange(playerName)
+							if wfStatus == true then
+								-- Player reported having Windfury enchant - in range
+								if classColor then
+									dot:SetVertexColor(classColor.r, classColor.g, classColor.b)
+								else
+									dot:SetVertexColor(0, 1, 0)  -- Green
+								end
+							elseif wfStatus == false then
+								-- Player reported NOT having Windfury enchant - out of range
+								dot:SetVertexColor(1, 0, 0)
+							else
+								-- No data yet - show yellow (unknown/waiting for report)
+								dot:SetVertexColor(1, 1, 0)
+							end
+							dot:Show()
+							if useOverlay and mainDot then mainDot:Hide() end
+						elseif hasBuff then
 							-- In range - show class-colored dot
 							if classColor then
 								dot:SetVertexColor(classColor.r, classColor.g, classColor.b)
 							else
 								dot:SetVertexColor(0, 1, 0)  -- Green
 							end
+							dot:Show()
+							if useOverlay and mainDot then mainDot:Hide() end
 						elseif buffName then
 							-- Has a buff to check but doesn't have it - out of range (red)
 							dot:SetVertexColor(1, 0, 0)
+							dot:Show()
+							if useOverlay and mainDot then mainDot:Hide() end
 						else
 							-- No buff to check (damage totem, etc.) - show class color
 							if classColor then
@@ -1797,10 +1824,9 @@ function ShamanPower:UpdatePartyRangeDots()
 							else
 								dot:SetVertexColor(0.5, 0.5, 0.5)  -- Gray
 							end
+							dot:Show()
+							if useOverlay and mainDot then mainDot:Hide() end
 						end
-						dot:Show()
-						-- Hide the main dot when using overlay
-						if useOverlay and mainDot then mainDot:Hide() end
 					else
 						-- No totem active for this element
 						dot:Hide()
@@ -4115,6 +4141,11 @@ function ShamanPower:PLAYER_ENTERING_WORLD()
 		self:UpdateCallerButtons()
 		self:RestoreCallerCooldowns()
 	end)
+
+	-- Initialize SPRange (totem range tracker for all classes)
+	C_Timer.After(1.5, function()
+		self:InitializeSPRange()
+	end)
 end
 
 function ShamanPower:ZONE_CHANGED()
@@ -4592,6 +4623,20 @@ function ShamanPower:ParseMessage(sender, msg)
 	-- Raid cooldown coordination messages
 	if strfind(msg, "^RCSYNC") or strfind(msg, "^BLCALL") or strfind(msg, "^MTCALL") or strfind(msg, "^MTSYNC") then
 		self:HandleRaidCooldownMessage(nil, msg, sender)
+	end
+
+	-- Windfury buff status from other players (for SPRange)
+	if strfind(msg, "^WFBUFF") then
+		local _, _, status = strfind(msg, "^WFBUFF ([01])")
+		if status then
+			if not self.WindfuryRangeData then
+				self.WindfuryRangeData = {}
+			end
+			self.WindfuryRangeData[sender] = {
+				hasWindfury = (status == "1"),
+				timestamp = GetTime()
+			}
+		end
 	end
 
 	self:UpdateLayout()
@@ -8684,5 +8729,810 @@ function ShamanPower:ClearCallerButtonCooldown(btn)
 	-- Restore icon color
 	if btn.icon then
 		btn.icon:SetDesaturated(false)
+	end
+end
+
+-- ============================================================================
+-- SPRange: Totem Range Tracker for Non-Shamans
+-- ============================================================================
+
+ShamanPower_RangeTracker = ShamanPower_RangeTracker or {}
+
+-- Trackable totems with their detection methods
+-- detection: "buff" = check for buff, "weapon" = check weapon enchant
+ShamanPower.TrackableTotems = {
+	-- Earth
+	{
+		id = "soe",
+		name = "Strength of Earth",
+		element = 1,
+		index = 1,
+		spellID = 8075,
+		detection = "buff",
+		buffName = "Strength of Earth",
+	},
+	{
+		id = "stoneskin",
+		name = "Stoneskin",
+		element = 1,
+		index = 2,
+		spellID = 8071,
+		detection = "buff",
+		buffName = "Stoneskin",
+	},
+	-- Fire
+	{
+		id = "tow",
+		name = "Totem of Wrath",
+		element = 2,
+		index = 1,
+		spellID = 30706,
+		detection = "buff",
+		buffName = "Totem of Wrath",
+	},
+	{
+		id = "flametongue",
+		name = "Flametongue Totem",
+		element = 2,
+		index = 5,
+		spellID = 8227,
+		detection = "buff",
+		buffName = "Flametongue Totem",
+	},
+	{
+		id = "frostresist",
+		name = "Frost Resistance",
+		element = 2,
+		index = 6,
+		spellID = 8181,
+		detection = "buff",
+		buffName = "Frost Resistance",
+	},
+	-- Water
+	{
+		id = "manaspring",
+		name = "Mana Spring",
+		element = 3,
+		index = 1,
+		spellID = 5675,
+		detection = "buff",
+		buffName = "Mana Spring",
+	},
+	{
+		id = "healingstream",
+		name = "Healing Stream",
+		element = 3,
+		index = 2,
+		spellID = 5394,
+		detection = "buff",
+		buffName = "Healing Stream",
+	},
+	{
+		id = "fireresist",
+		name = "Fire Resistance",
+		element = 3,
+		index = 6,
+		spellID = 8184,
+		detection = "buff",
+		buffName = "Fire Resistance",
+	},
+	-- Air
+	{
+		id = "windfury",
+		name = "Windfury Totem",
+		element = 4,
+		index = 1,
+		spellID = 8512,
+		detection = "weapon",  -- Special: check weapon enchant
+		buffName = "Windfury",
+	},
+	{
+		id = "graceofair",
+		name = "Grace of Air",
+		element = 4,
+		index = 2,
+		spellID = 8835,
+		detection = "buff",
+		buffName = "Grace of Air",
+	},
+	{
+		id = "wrathofair",
+		name = "Wrath of Air",
+		element = 4,
+		index = 3,
+		spellID = 3738,
+		detection = "buff",
+		buffName = "Wrath of Air",
+	},
+	{
+		id = "tranquilair",
+		name = "Tranquil Air",
+		element = 4,
+		index = 4,
+		spellID = 25908,
+		detection = "buff",
+		buffName = "Tranquil Air",
+	},
+	{
+		id = "natureresist",
+		name = "Nature Resistance",
+		element = 4,
+		index = 6,
+		spellID = 10595,
+		detection = "buff",
+		buffName = "Nature Resistance",
+	},
+	{
+		id = "windwall",
+		name = "Windwall",
+		element = 4,
+		index = 7,
+		spellID = 15107,
+		detection = "buff",
+		buffName = "Windwall",
+	},
+}
+
+-- Build lookup by ID
+ShamanPower.TrackableTotemsByID = {}
+for _, totem in ipairs(ShamanPower.TrackableTotems) do
+	ShamanPower.TrackableTotemsByID[totem.id] = totem
+end
+
+-- Short names for display
+ShamanPower.TrackableTotemShortNames = {
+	soe = "SoE",
+	stoneskin = "Stone",
+	tow = "ToW",
+	flametongue = "FT",
+	frostresist = "FrRes",
+	manaspring = "Mana",
+	healingstream = "Heal",
+	fireresist = "FiRes",
+	windfury = "WF",
+	graceofair = "GoA",
+	wrathofair = "WoA",
+	tranquilair = "Tranq",
+	natureresist = "NaRes",
+	windwall = "Wind",
+}
+
+-- Initialize SPRange settings
+function ShamanPower:InitSPRange()
+	if not ShamanPower_RangeTracker then
+		ShamanPower_RangeTracker = {}
+	end
+	if not ShamanPower_RangeTracker.tracked then
+		-- Default: track Windfury and Grace of Air
+		ShamanPower_RangeTracker.tracked = {
+			windfury = true,
+			graceofair = true,
+		}
+	end
+	if not ShamanPower_RangeTracker.position then
+		ShamanPower_RangeTracker.position = { point = "CENTER", x = 0, y = 0 }
+	end
+	if ShamanPower_RangeTracker.shown == nil then
+		ShamanPower_RangeTracker.shown = false
+	end
+end
+
+-- Check if player has a specific buff (case-insensitive partial match)
+function ShamanPower:SPRangeHasBuff(buffName)
+	if not buffName then return false end
+	local searchLower = buffName:lower()
+
+	for i = 1, 40 do
+		local name = UnitBuff("player", i)
+		if not name then break end
+		if name:lower():find(searchLower, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
+-- Check if player has Windfury weapon enchant
+function ShamanPower:SPRangeHasWindfuryWeapon()
+	local hasMainHandEnchant, mainHandExpiration, mainHandCharges, mainHandEnchantID,
+	      hasOffHandEnchant, offHandExpiration, offHandCharges, offHandEnchantID = GetWeaponEnchantInfo()
+
+	-- Windfury weapon enchant IDs (from Windfury Totem)
+	-- The enchant applied by Windfury Totem is different from the shaman's self-buff
+	-- We check if either hand has any temporary enchant as an approximation
+	-- More accurate: check for specific Windfury buff on weapon
+	if hasMainHandEnchant or hasOffHandEnchant then
+		-- Check if we also have the Windfury buff indicator
+		-- Windfury Totem applies "Windfury Totem" buff in some versions
+		-- or we can check for the weapon enchant directly
+		return true, mainHandExpiration, offHandExpiration
+	end
+	return false, nil, nil
+end
+
+-- Check if player is in range of a tracked totem
+function ShamanPower:SPRangeCheckTotem(totemData)
+	if totemData.detection == "weapon" then
+		-- Special case: Windfury - check weapon enchant
+		local hasEnchant = self:SPRangeHasWindfuryWeapon()
+		return hasEnchant
+	else
+		-- Standard buff check
+		return self:SPRangeHasBuff(totemData.buffName)
+	end
+end
+
+-- Create the SPRange frame
+function ShamanPower:CreateSPRangeFrame()
+	if self.spRangeFrame then return self.spRangeFrame end
+
+	local frame = CreateFrame("Frame", "ShamanPowerRangeFrame", UIParent, "BackdropTemplate")
+	frame:SetSize(150, 40)
+	frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+	frame:SetMovable(true)
+	frame:EnableMouse(true)
+	frame:SetClampedToScreen(true)
+
+	-- Backdrop
+	frame:SetBackdrop({
+		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true, tileSize = 16, edgeSize = 16,
+		insets = { left = 4, right = 4, top = 4, bottom = 4 }
+	})
+	frame:SetBackdropColor(0, 0, 0, 0.8)
+	frame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+
+	-- Title
+	local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	title:SetPoint("TOP", frame, "TOP", 0, -6)
+	title:SetText("SPRange")
+	title:SetTextColor(1, 0.82, 0)
+	frame.title = title
+
+	-- Container for totem icons
+	local iconContainer = CreateFrame("Frame", nil, frame)
+	iconContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -20)
+	iconContainer:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
+	frame.iconContainer = iconContainer
+
+	-- Drag to move
+	frame:RegisterForDrag("LeftButton")
+	frame:SetScript("OnDragStart", function(self)
+		self:StartMoving()
+	end)
+	frame:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		-- Save position
+		local point, _, _, x, y = self:GetPoint()
+		ShamanPower_RangeTracker.position = { point = point, x = x, y = y }
+	end)
+
+	-- Right-click to open config
+	frame:SetScript("OnMouseUp", function(self, button)
+		if button == "RightButton" then
+			ShamanPower:ShowSPRangeConfig()
+		end
+	end)
+
+	-- Tooltip
+	frame:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:AddLine("SPRange - Totem Range Tracker", 1, 0.82, 0)
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine("Drag to move", 0.7, 0.7, 0.7)
+		GameTooltip:AddLine("Right-click to configure", 0.7, 0.7, 0.7)
+		GameTooltip:AddLine("/sprange - Toggle visibility", 0.7, 0.7, 0.7)
+		GameTooltip:Show()
+	end)
+	frame:SetScript("OnLeave", function(self)
+		GameTooltip:Hide()
+	end)
+
+	frame.totemButtons = {}
+	frame:Hide()
+
+	self.spRangeFrame = frame
+	return frame
+end
+
+-- Create a totem button for SPRange
+function ShamanPower:CreateSPRangeTotemButton(parent, totemData, index)
+	local btn = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+	btn:SetSize(36, 36)  -- Larger for better visibility
+
+	-- Background
+	btn:SetBackdrop({
+		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Buttons\\WHITE8X8",
+		tile = true, tileSize = 16, edgeSize = 2,
+		insets = { left = 2, right = 2, top = 2, bottom = 2 }
+	})
+	btn:SetBackdropColor(0, 0, 0, 0.7)
+	btn:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+
+	-- Icon
+	local icon = btn:CreateTexture(nil, "ARTWORK")
+	icon:SetPoint("TOPLEFT", 3, -3)
+	icon:SetPoint("BOTTOMRIGHT", -3, 3)
+	icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+	-- Get icon from spell
+	local _, _, spellIcon = GetSpellInfo(totemData.spellID)
+	icon:SetTexture(spellIcon)
+	btn.icon = icon
+
+	-- Range indicator overlay (red tint)
+	local rangeOverlay = btn:CreateTexture(nil, "OVERLAY")
+	rangeOverlay:SetAllPoints(icon)
+	rangeOverlay:SetColorTexture(0.3, 0, 0, 0.6)  -- Darker red overlay
+	rangeOverlay:Hide()
+	btn.rangeOverlay = rangeOverlay
+
+	-- Status text (shows "OUT OF RANGE" or "MISSING")
+	local statusText = btn:CreateFontString(nil, "OVERLAY")
+	statusText:SetFont("Fonts\\FRIZQT__.TTF", 7, "OUTLINE")
+	statusText:SetPoint("CENTER", btn, "CENTER", 0, 0)
+	statusText:SetTextColor(1, 0.2, 0.2)  -- Red text
+	statusText:SetShadowColor(0, 0, 0, 1)
+	statusText:SetShadowOffset(1, -1)
+	statusText:Hide()
+	btn.statusText = statusText
+
+	-- Short totem name below icon
+	local nameText = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	nameText:SetFont("Fonts\\FRIZQT__.TTF", 8, "OUTLINE")
+	nameText:SetPoint("TOP", btn, "BOTTOM", 0, -1)
+	nameText:SetText(self.TrackableTotemShortNames[totemData.id] or totemData.name:sub(1, 6))
+	nameText:SetTextColor(0.8, 0.8, 0.8)
+	btn.nameText = nameText
+
+	-- In-range state
+	btn.inRange = false
+	btn.status = "unknown"  -- "inrange", "outofrange", "missing"
+
+	-- Tooltip
+	btn:EnableMouse(true)
+	btn:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:AddLine(totemData.name, 1, 1, 1)
+		if totemData.detection == "weapon" then
+			GameTooltip:AddLine("Detected via: Weapon Enchant", 0.7, 0.7, 0.7)
+		else
+			GameTooltip:AddLine("Detected via: Buff", 0.7, 0.7, 0.7)
+		end
+		if self.status == "inrange" then
+			GameTooltip:AddLine("Status: IN RANGE", 0, 1, 0)
+		elseif self.status == "missing" then
+			GameTooltip:AddLine("Status: MISSING (no shaman in group)", 0.7, 0.7, 0.7)
+		else
+			GameTooltip:AddLine("Status: OUT OF RANGE", 1, 0, 0)
+		end
+		GameTooltip:Show()
+	end)
+	btn:SetScript("OnLeave", function(self)
+		GameTooltip:Hide()
+	end)
+
+	btn.totemData = totemData
+	return btn
+end
+
+-- Update SPRange frame with tracked totems
+function ShamanPower:UpdateSPRangeFrame()
+	local frame = self.spRangeFrame
+	if not frame then return end
+
+	-- Clear existing buttons
+	for _, btn in pairs(frame.totemButtons) do
+		btn:Hide()
+	end
+	frame.totemButtons = {}
+
+	-- Get tracked totems
+	local tracked = ShamanPower_RangeTracker.tracked or {}
+	local trackedList = {}
+
+	for _, totemData in ipairs(self.TrackableTotems) do
+		if tracked[totemData.id] then
+			table.insert(trackedList, totemData)
+		end
+	end
+
+	if #trackedList == 0 then
+		frame:SetSize(120, 50)
+		frame.title:SetText("SPRange (none)")
+		return
+	end
+
+	-- Calculate frame size (larger buttons with names below)
+	local buttonSize = 36
+	local padding = 6
+	local numButtons = #trackedList
+	local width = (buttonSize * numButtons) + (padding * (numButtons + 1)) + 12
+	local height = buttonSize + 40  -- Title + padding + name text
+
+	frame:SetSize(math.max(100, width), height)
+	frame.title:SetText("SPRange")
+
+	-- Create buttons
+	for i, totemData in ipairs(trackedList) do
+		local btn = self:CreateSPRangeTotemButton(frame.iconContainer, totemData, i)
+		btn:SetPoint("LEFT", frame.iconContainer, "LEFT", (i - 1) * (buttonSize + padding), 4)
+		btn:Show()
+		frame.totemButtons[totemData.id] = btn
+	end
+end
+
+-- Check if ANYONE in the group has a specific buff (indicates totem is down somewhere)
+function ShamanPower:SPRangeAnyoneHasBuff(buffName)
+	if not buffName then return false end
+	local searchLower = buffName:lower()
+
+	-- Check player first
+	for i = 1, 40 do
+		local name = UnitBuff("player", i)
+		if not name then break end
+		if name:lower():find(searchLower, 1, true) then
+			return true
+		end
+	end
+
+	-- Check group members
+	if IsInRaid() then
+		-- Find our subgroup first
+		local mySubgroup = 1
+		for i = 1, 40 do
+			local name, _, subgroup = GetRaidRosterInfo(i)
+			if name == UnitName("player") then
+				mySubgroup = subgroup
+				break
+			end
+		end
+		-- Check raid members in our subgroup
+		for i = 1, 40 do
+			local name, _, subgroup = GetRaidRosterInfo(i)
+			if name and subgroup == mySubgroup then
+				local unit = "raid" .. i
+				for j = 1, 40 do
+					local buffNameCheck = UnitBuff(unit, j)
+					if not buffNameCheck then break end
+					if buffNameCheck:lower():find(searchLower, 1, true) then
+						return true
+					end
+				end
+			end
+		end
+	elseif IsInGroup() then
+		-- Check party members
+		for i = 1, 4 do
+			local unit = "party" .. i
+			if UnitExists(unit) then
+				for j = 1, 40 do
+					local name = UnitBuff(unit, j)
+					if not name then break end
+					if name:lower():find(searchLower, 1, true) then
+						return true
+					end
+				end
+			end
+		end
+	end
+
+	return false
+end
+
+-- Check if anyone has Windfury weapon enchant (special case)
+function ShamanPower:SPRangeAnyoneHasWindfury()
+	-- For Windfury, we can only reliably check our own weapon
+	-- But if we have the enchant, the totem is definitely up
+	local hasEnchant = self:SPRangeHasWindfuryWeapon()
+	if hasEnchant then
+		return true
+	end
+
+	-- We can't check other players' weapon enchants directly
+	-- So we'll have to rely on seeing if melee in the group are proccing it
+	-- For now, return false if we don't have it ourselves
+	-- This means for Windfury specifically, we can only know if WE are in range
+	return false
+end
+
+-- Update range status for all tracked totems
+function ShamanPower:UpdateSPRangeStatus()
+	local frame = self.spRangeFrame
+	if not frame or not frame:IsShown() then return end
+
+	for id, btn in pairs(frame.totemButtons) do
+		local totemData = btn.totemData
+		local playerHasBuff = self:SPRangeCheckTotem(totemData)
+
+		-- Check if anyone in the group has the buff (totem is down)
+		local totemIsDown
+		if totemData.detection == "weapon" then
+			-- Windfury special case - can only check ourselves
+			totemIsDown = playerHasBuff  -- If we have it, it's down. Otherwise unknown.
+		else
+			totemIsDown = self:SPRangeAnyoneHasBuff(totemData.buffName)
+		end
+
+		btn.inRange = playerHasBuff
+
+		if playerHasBuff then
+			-- IN RANGE - we have the buff
+			btn:SetBackdropBorderColor(0, 1, 0, 1)
+			btn.rangeOverlay:Hide()
+			btn.icon:SetDesaturated(false)
+			btn.icon:SetAlpha(1)
+			btn.statusText:Hide()
+			btn.nameText:SetTextColor(0, 1, 0.4)  -- Green name
+			btn.status = "inrange"
+		elseif totemIsDown then
+			-- OUT OF RANGE - totem is down (someone has buff) but we don't
+			btn:SetBackdropBorderColor(0.8, 0, 0, 1)
+			btn.rangeOverlay:Show()
+			btn.icon:SetDesaturated(true)
+			btn.icon:SetAlpha(0.6)
+			btn.statusText:SetText("OUT OF\nRANGE")
+			btn.statusText:SetTextColor(1, 0.2, 0.2)  -- Red text
+			btn.statusText:Show()
+			btn.nameText:SetTextColor(0.8, 0.3, 0.3)  -- Red name
+			btn.status = "outofrange"
+		else
+			-- MISSING - no one has the buff, totem not down
+			btn:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)  -- Grey border
+			btn.rangeOverlay:Hide()
+			btn.icon:SetDesaturated(true)
+			btn.icon:SetAlpha(0.4)
+			btn.statusText:SetText("MISSING")
+			btn.statusText:SetTextColor(0.7, 0.7, 0.7)  -- Grey text
+			btn.statusText:Show()
+			btn.nameText:SetTextColor(0.5, 0.5, 0.5)  -- Grey name
+			btn.status = "missing"
+		end
+	end
+end
+
+-- Show SPRange configuration
+function ShamanPower:ShowSPRangeConfig()
+	-- Create config frame if needed
+	if not self.spRangeConfigFrame then
+		local config = CreateFrame("Frame", "ShamanPowerRangeConfigFrame", UIParent, "BackdropTemplate")
+		config:SetSize(200, 300)
+		config:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+		config:SetMovable(true)
+		config:EnableMouse(true)
+		config:SetClampedToScreen(true)
+		config:SetFrameStrata("DIALOG")
+
+		config:SetBackdrop({
+			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			tile = true, tileSize = 16, edgeSize = 16,
+			insets = { left = 4, right = 4, top = 4, bottom = 4 }
+		})
+		config:SetBackdropColor(0.1, 0.1, 0.1, 0.95)
+		config:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+
+		-- Title
+		local title = config:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		title:SetPoint("TOP", config, "TOP", 0, -10)
+		title:SetText("SPRange Configuration")
+		title:SetTextColor(1, 0.82, 0)
+
+		-- Close button
+		local closeBtn = CreateFrame("Button", nil, config, "UIPanelCloseButton")
+		closeBtn:SetPoint("TOPRIGHT", config, "TOPRIGHT", -2, -2)
+		closeBtn:SetScript("OnClick", function() config:Hide() end)
+
+		-- Drag to move
+		config:RegisterForDrag("LeftButton")
+		config:SetScript("OnDragStart", function(self) self:StartMoving() end)
+		config:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+
+		-- Scroll frame for checkboxes
+		local scrollFrame = CreateFrame("ScrollFrame", nil, config, "UIPanelScrollFrameTemplate")
+		scrollFrame:SetPoint("TOPLEFT", config, "TOPLEFT", 10, -35)
+		scrollFrame:SetPoint("BOTTOMRIGHT", config, "BOTTOMRIGHT", -30, 10)
+
+		local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+		scrollChild:SetSize(160, 400)
+		scrollFrame:SetScrollChild(scrollChild)
+
+		config.scrollChild = scrollChild
+		config.checkboxes = {}
+
+		-- Create checkboxes for each trackable totem
+		local yOffset = 0
+		local lastElement = nil
+
+		for _, totemData in ipairs(ShamanPower.TrackableTotems) do
+			-- Add element header if new element
+			if totemData.element ~= lastElement then
+				local elementNames = { "Earth", "Fire", "Water", "Air" }
+				local elementColors = {
+					{ r = 0.6, g = 0.4, b = 0.2 },  -- Earth (brown)
+					{ r = 1.0, g = 0.4, b = 0.0 },  -- Fire (orange)
+					{ r = 0.0, g = 0.6, b = 1.0 },  -- Water (blue)
+					{ r = 0.6, g = 0.8, b = 1.0 },  -- Air (light blue)
+				}
+
+				if lastElement then
+					yOffset = yOffset - 5  -- Extra space between elements
+				end
+
+				local header = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+				header:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
+				header:SetText(elementNames[totemData.element])
+				local c = elementColors[totemData.element]
+				header:SetTextColor(c.r, c.g, c.b)
+
+				yOffset = yOffset + 16
+				lastElement = totemData.element
+			end
+
+			-- Checkbox
+			local cb = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+			cb:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, -yOffset)
+			cb:SetSize(20, 20)
+
+			local label = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+			label:SetPoint("LEFT", cb, "RIGHT", 2, 0)
+			label:SetText(totemData.name)
+
+			cb.totemID = totemData.id
+			cb:SetChecked(ShamanPower_RangeTracker.tracked[totemData.id] or false)
+
+			cb:SetScript("OnClick", function(self)
+				ShamanPower_RangeTracker.tracked[self.totemID] = self:GetChecked()
+				ShamanPower:UpdateSPRangeFrame()
+			end)
+
+			config.checkboxes[totemData.id] = cb
+			yOffset = yOffset + 22
+		end
+
+		-- Adjust scroll child height
+		scrollChild:SetHeight(yOffset + 10)
+
+		config:Hide()
+		self.spRangeConfigFrame = config
+	end
+
+	-- Update checkbox states
+	for id, cb in pairs(self.spRangeConfigFrame.checkboxes) do
+		cb:SetChecked(ShamanPower_RangeTracker.tracked[id] or false)
+	end
+
+	self.spRangeConfigFrame:Show()
+end
+
+-- Toggle SPRange visibility
+function ShamanPower:ToggleSPRange()
+	self:InitSPRange()
+
+	if not self.spRangeFrame then
+		self:CreateSPRangeFrame()
+	end
+
+	if self.spRangeFrame:IsShown() then
+		self.spRangeFrame:Hide()
+		ShamanPower_RangeTracker.shown = false
+		self:Print("SPRange hidden. Use /sprange to show.")
+	else
+		-- Restore position
+		local pos = ShamanPower_RangeTracker.position
+		if pos then
+			self.spRangeFrame:ClearAllPoints()
+			self.spRangeFrame:SetPoint(pos.point, UIParent, pos.point, pos.x, pos.y)
+		end
+
+		self:UpdateSPRangeFrame()
+		self.spRangeFrame:Show()
+		ShamanPower_RangeTracker.shown = true
+		self:Print("SPRange shown. Right-click to configure tracked totems.")
+	end
+end
+
+-- Broadcast Windfury weapon enchant status to group
+function ShamanPower:BroadcastWindfuryStatus()
+	if not IsInGroup() then return end
+
+	local hasWindfury = self:SPRangeHasWindfuryWeapon()
+	local status = hasWindfury and "1" or "0"
+
+	-- Only send if status changed or every 5 seconds
+	if self.lastWFStatus ~= status or not self.lastWFBroadcast or (GetTime() - self.lastWFBroadcast) > 5 then
+		self.lastWFStatus = status
+		self.lastWFBroadcast = GetTime()
+
+		local channel = IsInRaid() and "RAID" or "PARTY"
+		self:SendMessage("WFBUFF " .. status, channel)
+	end
+end
+
+-- Get Windfury range data for a specific player
+function ShamanPower:GetWindfuryRangeStatus(playerName)
+	if not self.WindfuryRangeData then return nil end
+	local data = self.WindfuryRangeData[playerName]
+	if not data then return nil end
+
+	-- Data expires after 10 seconds
+	if (GetTime() - data.timestamp) > 10 then
+		self.WindfuryRangeData[playerName] = nil
+		return nil
+	end
+
+	return data.hasWindfury
+end
+
+-- Check if a player is in range of Windfury totem (using reported data)
+function ShamanPower:IsPlayerInWindfuryRange(playerName)
+	-- Check self first
+	if playerName == self.player then
+		return self:SPRangeHasWindfuryWeapon()
+	end
+
+	-- Check reported data from other players
+	return self:GetWindfuryRangeStatus(playerName)
+end
+
+-- Setup SPRange update timer
+function ShamanPower:SetupSPRangeUpdater()
+	if self.spRangeUpdater then return end
+
+	self.spRangeUpdater = CreateFrame("Frame")
+	self.spRangeUpdater.elapsed = 0
+	self.spRangeUpdater.broadcastElapsed = 0
+
+	self.spRangeUpdater:SetScript("OnUpdate", function(frame, elapsed)
+		frame.elapsed = frame.elapsed + elapsed
+		frame.broadcastElapsed = frame.broadcastElapsed + elapsed
+
+		-- Update display 5 times per second
+		if frame.elapsed >= 0.2 then
+			frame.elapsed = 0
+			ShamanPower:UpdateSPRangeStatus()
+		end
+
+		-- Broadcast Windfury status every 2 seconds when in a group
+		if frame.broadcastElapsed >= 2 then
+			frame.broadcastElapsed = 0
+			ShamanPower:BroadcastWindfuryStatus()
+		end
+	end)
+end
+
+-- Initialize SPRange on addon load (for non-shamans primarily, but works for all)
+function ShamanPower:InitializeSPRange()
+	self:InitSPRange()
+	self:CreateSPRangeFrame()
+	self:SetupSPRangeUpdater()
+
+	-- Restore visibility if it was shown before
+	if ShamanPower_RangeTracker.shown then
+		local pos = ShamanPower_RangeTracker.position
+		if pos then
+			self.spRangeFrame:ClearAllPoints()
+			self.spRangeFrame:SetPoint(pos.point, UIParent, pos.point, pos.x, pos.y)
+		end
+		self:UpdateSPRangeFrame()
+		self.spRangeFrame:Show()
+	end
+end
+
+-- Register /sprange slash command
+SLASH_SPRANGE1 = "/sprange"
+SlashCmdList["SPRANGE"] = function(msg)
+	msg = msg:lower():trim()
+
+	if msg == "config" or msg == "options" then
+		ShamanPower:InitSPRange()
+		if not ShamanPower.spRangeFrame then
+			ShamanPower:CreateSPRangeFrame()
+		end
+		ShamanPower:ShowSPRangeConfig()
+	else
+		ShamanPower:ToggleSPRange()
 	end
 end

@@ -2009,10 +2009,8 @@ function ShamanPower:UpdateMiniTotemBar()
 	-- Setup keybindings for the buttons
 	self:SetupKeybindings()
 
-	-- Setup auto-updating WoW macros (delayed to ensure assignments are loaded)
-	C_Timer.After(1, function()
-		ShamanPower:UpdateSPMacros()
-	end)
+	-- Note: Macros are created manually via Options -> Buttons -> "Create/Update Macros" button
+	-- or /spmacros command. No automatic macro updates to avoid interfering with macro UI.
 end
 
 -- Tooltip for mini totem bar buttons
@@ -2545,6 +2543,7 @@ function ShamanPower:PerformCycle(name, class, skipzero)
 			-- Also update the mini totem bar
 			self:UpdateMiniTotemBar()
 			self:UpdateDropAllButton()
+			-- Update macros when assignment changes
 			self:UpdateSPMacros()
 		end
 		local msgQueue
@@ -2620,6 +2619,7 @@ function ShamanPower:PerformCycleBackwards(name, class, skipzero)
 			-- Also update the mini totem bar
 			self:UpdateMiniTotemBar()
 			self:UpdateDropAllButton()
+			-- Update macros when assignment changes
 			self:UpdateSPMacros()
 		end
 		local msgQueue
@@ -6301,9 +6301,6 @@ keybindEventFrame:SetScript("OnEvent", function(self, event)
 	if event == "PLAYER_REGEN_ENABLED" then
 		if ShamanPower.keybindsPending then
 			ShamanPower:SetupKeybindings()
-		end
-		if ShamanPower.macroUpdatePending then
-			ShamanPower:UpdateSPMacros()
 		end
 		return
 	end

@@ -7758,6 +7758,10 @@ end
 
 -- Check if player can assign raid cooldowns (RL or assist)
 function ShamanPower:CanAssignRaidCooldowns()
+	-- Allow solo players to manage their own settings
+	if GetNumGroupMembers() == 0 then
+		return true
+	end
 	return UnitIsGroupLeader("player") or UnitIsGroupAssistant("player")
 end
 
@@ -8602,6 +8606,14 @@ end
 
 function ShamanPower:UpdateCallerButtons()
 	self:InitRaidCooldowns()
+
+	-- Don't show caller buttons when not in a group
+	if GetNumGroupMembers() == 0 then
+		if self.callerButtonFrame then
+			self.callerButtonFrame:Hide()
+		end
+		return
+	end
 
 	local playerName = self.player
 	local bl = ShamanPower_RaidCooldowns.bloodlust

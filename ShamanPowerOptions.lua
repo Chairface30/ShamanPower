@@ -731,6 +731,371 @@ ShamanPower.options = {
 								ShamanPower:UpdateDropAllButton()
 							end
 						},
+						totem_bar_order_header = {
+							order = 2.91,
+							type = "description",
+							name = "\n|cffffd200Totem Bar Order:|r Choose the order of totem buttons",
+							fontSize = "medium",
+						},
+						totem_bar_order_1 = {
+							order = 2.911,
+							type = "select",
+							name = "1st",
+							desc = "First totem button position",
+							width = 0.5,
+							values = {
+								[1] = "Earth",
+								[2] = "Fire",
+								[3] = "Water",
+								[4] = "Air",
+							},
+							get = function(info)
+								return ShamanPower.opt.totemBarOrder and ShamanPower.opt.totemBarOrder[1] or 1
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.totemBarOrder then ShamanPower.opt.totemBarOrder = {1, 2, 3, 4} end
+								-- Swap if duplicate
+								for i = 2, 4 do
+									if ShamanPower.opt.totemBarOrder[i] == val then
+										ShamanPower.opt.totemBarOrder[i] = ShamanPower.opt.totemBarOrder[1]
+										break
+									end
+								end
+								ShamanPower.opt.totemBarOrder[1] = val
+								ShamanPower:UpdateMiniTotemBar()
+							end
+						},
+						totem_bar_order_2 = {
+							order = 2.912,
+							type = "select",
+							name = "2nd",
+							desc = "Second totem button position",
+							width = 0.5,
+							values = {
+								[1] = "Earth",
+								[2] = "Fire",
+								[3] = "Water",
+								[4] = "Air",
+							},
+							get = function(info)
+								return ShamanPower.opt.totemBarOrder and ShamanPower.opt.totemBarOrder[2] or 2
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.totemBarOrder then ShamanPower.opt.totemBarOrder = {1, 2, 3, 4} end
+								-- Swap if duplicate
+								for i = 1, 4 do
+									if i ~= 2 and ShamanPower.opt.totemBarOrder[i] == val then
+										ShamanPower.opt.totemBarOrder[i] = ShamanPower.opt.totemBarOrder[2]
+										break
+									end
+								end
+								ShamanPower.opt.totemBarOrder[2] = val
+								ShamanPower:UpdateMiniTotemBar()
+							end
+						},
+						totem_bar_order_3 = {
+							order = 2.913,
+							type = "select",
+							name = "3rd",
+							desc = "Third totem button position",
+							width = 0.5,
+							values = {
+								[1] = "Earth",
+								[2] = "Fire",
+								[3] = "Water",
+								[4] = "Air",
+							},
+							get = function(info)
+								return ShamanPower.opt.totemBarOrder and ShamanPower.opt.totemBarOrder[3] or 3
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.totemBarOrder then ShamanPower.opt.totemBarOrder = {1, 2, 3, 4} end
+								-- Swap if duplicate
+								for i = 1, 4 do
+									if i ~= 3 and ShamanPower.opt.totemBarOrder[i] == val then
+										ShamanPower.opt.totemBarOrder[i] = ShamanPower.opt.totemBarOrder[3]
+										break
+									end
+								end
+								ShamanPower.opt.totemBarOrder[3] = val
+								ShamanPower:UpdateMiniTotemBar()
+							end
+						},
+						totem_bar_order_4 = {
+							order = 2.914,
+							type = "select",
+							name = "4th",
+							desc = "Fourth totem button position",
+							width = 0.5,
+							values = {
+								[1] = "Earth",
+								[2] = "Fire",
+								[3] = "Water",
+								[4] = "Air",
+							},
+							get = function(info)
+								return ShamanPower.opt.totemBarOrder and ShamanPower.opt.totemBarOrder[4] or 4
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.totemBarOrder then ShamanPower.opt.totemBarOrder = {1, 2, 3, 4} end
+								-- Swap if duplicate
+								for i = 1, 3 do
+									if ShamanPower.opt.totemBarOrder[i] == val then
+										ShamanPower.opt.totemBarOrder[i] = ShamanPower.opt.totemBarOrder[4]
+										break
+									end
+								end
+								ShamanPower.opt.totemBarOrder[4] = val
+								ShamanPower:UpdateMiniTotemBar()
+							end
+						},
+						cooldown_bar_order_header = {
+							order = 2.92,
+							type = "description",
+							name = "\n|cffffd200Cooldown Bar Order:|r Choose the order of cooldown buttons",
+							fontSize = "medium",
+							hidden = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+						},
+						cooldown_bar_order_1 = {
+							order = 2.921,
+							type = "select",
+							name = "1st",
+							desc = "First cooldown button position",
+							width = 0.42,
+							hidden = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							values = {
+								[1] = "Shield",
+								[2] = "Recall",
+								[3] = "Ankh",
+								[4] = "NS",
+								[5] = "MTT",
+								[6] = "BL",
+								[7] = "Imbue",
+							},
+							get = function(info)
+								return ShamanPower.opt.cooldownBarOrder and ShamanPower.opt.cooldownBarOrder[1] or 1
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.cooldownBarOrder then ShamanPower.opt.cooldownBarOrder = {1, 2, 3, 4, 5, 6, 7} end
+								-- Swap if duplicate
+								for i = 2, 7 do
+									if ShamanPower.opt.cooldownBarOrder[i] == val then
+										ShamanPower.opt.cooldownBarOrder[i] = ShamanPower.opt.cooldownBarOrder[1]
+										break
+									end
+								end
+								ShamanPower.opt.cooldownBarOrder[1] = val
+								if not InCombatLockdown() then ShamanPower:RecreateCooldownBar() end
+							end
+						},
+						cooldown_bar_order_2 = {
+							order = 2.922,
+							type = "select",
+							name = "2nd",
+							desc = "Second cooldown button position",
+							width = 0.42,
+							hidden = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							values = {
+								[1] = "Shield",
+								[2] = "Recall",
+								[3] = "Ankh",
+								[4] = "NS",
+								[5] = "MTT",
+								[6] = "BL",
+								[7] = "Imbue",
+							},
+							get = function(info)
+								return ShamanPower.opt.cooldownBarOrder and ShamanPower.opt.cooldownBarOrder[2] or 2
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.cooldownBarOrder then ShamanPower.opt.cooldownBarOrder = {1, 2, 3, 4, 5, 6, 7} end
+								-- Swap if duplicate
+								for i = 1, 7 do
+									if i ~= 2 and ShamanPower.opt.cooldownBarOrder[i] == val then
+										ShamanPower.opt.cooldownBarOrder[i] = ShamanPower.opt.cooldownBarOrder[2]
+										break
+									end
+								end
+								ShamanPower.opt.cooldownBarOrder[2] = val
+								if not InCombatLockdown() then ShamanPower:RecreateCooldownBar() end
+							end
+						},
+						cooldown_bar_order_3 = {
+							order = 2.923,
+							type = "select",
+							name = "3rd",
+							desc = "Third cooldown button position",
+							width = 0.42,
+							hidden = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							values = {
+								[1] = "Shield",
+								[2] = "Recall",
+								[3] = "Ankh",
+								[4] = "NS",
+								[5] = "MTT",
+								[6] = "BL",
+								[7] = "Imbue",
+							},
+							get = function(info)
+								return ShamanPower.opt.cooldownBarOrder and ShamanPower.opt.cooldownBarOrder[3] or 3
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.cooldownBarOrder then ShamanPower.opt.cooldownBarOrder = {1, 2, 3, 4, 5, 6, 7} end
+								-- Swap if duplicate
+								for i = 1, 7 do
+									if i ~= 3 and ShamanPower.opt.cooldownBarOrder[i] == val then
+										ShamanPower.opt.cooldownBarOrder[i] = ShamanPower.opt.cooldownBarOrder[3]
+										break
+									end
+								end
+								ShamanPower.opt.cooldownBarOrder[3] = val
+								if not InCombatLockdown() then ShamanPower:RecreateCooldownBar() end
+							end
+						},
+						cooldown_bar_order_4 = {
+							order = 2.924,
+							type = "select",
+							name = "4th",
+							desc = "Fourth cooldown button position",
+							width = 0.42,
+							hidden = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							values = {
+								[1] = "Shield",
+								[2] = "Recall",
+								[3] = "Ankh",
+								[4] = "NS",
+								[5] = "MTT",
+								[6] = "BL",
+								[7] = "Imbue",
+							},
+							get = function(info)
+								return ShamanPower.opt.cooldownBarOrder and ShamanPower.opt.cooldownBarOrder[4] or 4
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.cooldownBarOrder then ShamanPower.opt.cooldownBarOrder = {1, 2, 3, 4, 5, 6, 7} end
+								-- Swap if duplicate
+								for i = 1, 7 do
+									if i ~= 4 and ShamanPower.opt.cooldownBarOrder[i] == val then
+										ShamanPower.opt.cooldownBarOrder[i] = ShamanPower.opt.cooldownBarOrder[4]
+										break
+									end
+								end
+								ShamanPower.opt.cooldownBarOrder[4] = val
+								if not InCombatLockdown() then ShamanPower:RecreateCooldownBar() end
+							end
+						},
+						cooldown_bar_order_5 = {
+							order = 2.925,
+							type = "select",
+							name = "5th",
+							desc = "Fifth cooldown button position",
+							width = 0.42,
+							hidden = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							values = {
+								[1] = "Shield",
+								[2] = "Recall",
+								[3] = "Ankh",
+								[4] = "NS",
+								[5] = "MTT",
+								[6] = "BL",
+								[7] = "Imbue",
+							},
+							get = function(info)
+								return ShamanPower.opt.cooldownBarOrder and ShamanPower.opt.cooldownBarOrder[5] or 5
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.cooldownBarOrder then ShamanPower.opt.cooldownBarOrder = {1, 2, 3, 4, 5, 6, 7} end
+								-- Swap if duplicate
+								for i = 1, 7 do
+									if i ~= 5 and ShamanPower.opt.cooldownBarOrder[i] == val then
+										ShamanPower.opt.cooldownBarOrder[i] = ShamanPower.opt.cooldownBarOrder[5]
+										break
+									end
+								end
+								ShamanPower.opt.cooldownBarOrder[5] = val
+								if not InCombatLockdown() then ShamanPower:RecreateCooldownBar() end
+							end
+						},
+						cooldown_bar_order_6 = {
+							order = 2.926,
+							type = "select",
+							name = "6th",
+							desc = "Sixth cooldown button position",
+							width = 0.42,
+							hidden = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							values = {
+								[1] = "Shield",
+								[2] = "Recall",
+								[3] = "Ankh",
+								[4] = "NS",
+								[5] = "MTT",
+								[6] = "BL",
+								[7] = "Imbue",
+							},
+							get = function(info)
+								return ShamanPower.opt.cooldownBarOrder and ShamanPower.opt.cooldownBarOrder[6] or 6
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.cooldownBarOrder then ShamanPower.opt.cooldownBarOrder = {1, 2, 3, 4, 5, 6, 7} end
+								-- Swap if duplicate
+								for i = 1, 7 do
+									if i ~= 6 and ShamanPower.opt.cooldownBarOrder[i] == val then
+										ShamanPower.opt.cooldownBarOrder[i] = ShamanPower.opt.cooldownBarOrder[6]
+										break
+									end
+								end
+								ShamanPower.opt.cooldownBarOrder[6] = val
+								if not InCombatLockdown() then ShamanPower:RecreateCooldownBar() end
+							end
+						},
+						cooldown_bar_order_7 = {
+							order = 2.927,
+							type = "select",
+							name = "7th",
+							desc = "Seventh cooldown button position",
+							width = 0.42,
+							hidden = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							values = {
+								[1] = "Shield",
+								[2] = "Recall",
+								[3] = "Ankh",
+								[4] = "NS",
+								[5] = "MTT",
+								[6] = "BL",
+								[7] = "Imbue",
+							},
+							get = function(info)
+								return ShamanPower.opt.cooldownBarOrder and ShamanPower.opt.cooldownBarOrder[7] or 7
+							end,
+							set = function(info, val)
+								if not ShamanPower.opt.cooldownBarOrder then ShamanPower.opt.cooldownBarOrder = {1, 2, 3, 4, 5, 6, 7} end
+								-- Swap if duplicate
+								for i = 1, 6 do
+									if ShamanPower.opt.cooldownBarOrder[i] == val then
+										ShamanPower.opt.cooldownBarOrder[i] = ShamanPower.opt.cooldownBarOrder[7]
+										break
+									end
+								end
+								ShamanPower.opt.cooldownBarOrder[7] = val
+								if not InCombatLockdown() then ShamanPower:RecreateCooldownBar() end
+							end
+						},
 						cdbar_items_header = {
 							order = 2.95,
 							type = "description",

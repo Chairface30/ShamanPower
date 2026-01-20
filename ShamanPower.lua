@@ -4,7 +4,10 @@ ShamanPower.isVanilla = (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_CLASSIC)
 ShamanPower.isBCC = (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_BURNING_CRUSADE_CLASSIC)
 ShamanPower.isWrath = (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_WRATH_CLASSIC)
 
-local L = LibStub("AceLocale-3.0"):GetLocale("ShamanPower")
+local L = LibStub("AceLocale-3.0"):GetLocale("ShamanPower", true)
+if not L then
+	L = setmetatable({}, {__index = function(t, k) return k end})
+end
 local LSM3 = LibStub("LibSharedMedia-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 local LUIDDM = LibStub("LibUIDropDownMenu-4.0")
@@ -2821,6 +2824,15 @@ function ShamanPower:CreateCooldownBar()
 			btn.spellType = spellType
 			btn.defaultShieldSpell = defaultShieldSpell
 
+			-- Assign cooldownType for ordering (1=Shield, 2=Recall, 3=Ankh, 4=NS, 5=MTT, 6=BL/Hero, 7=Imbue)
+			-- TrackedCooldowns indices: 1=Shield, 2=Recall, 3=Ankh, 4=NS, 5=MTT, 6=BL, 7=Hero
+			-- BL and Heroism both map to type 6
+			if i <= 5 then
+				btn.cooldownType = i
+			else
+				btn.cooldownType = 6  -- Both BL (index 6) and Heroism (index 7) are type 6
+			end
+
 			-- Store reference to shield button for flyout
 			if spellType == "shield" then
 				self.shieldButton = btn
@@ -3018,6 +3030,22 @@ end
 function ShamanPower:UpdateCooldownBarLayout()
 	if not self.cooldownBar then return end
 	if #self.cooldownButtons == 0 then return end
+
+	-- Sort cooldownButtons by cooldownBarOrder
+	local cooldownBarOrder = self.opt.cooldownBarOrder or {1, 2, 3, 4, 5, 6, 7}
+
+	-- Create a lookup table for order position (cooldownType -> position)
+	local orderLookup = {}
+	for position, cooldownType in ipairs(cooldownBarOrder) do
+		orderLookup[cooldownType] = position
+	end
+
+	-- Sort by order position
+	table.sort(self.cooldownButtons, function(a, b)
+		local orderA = orderLookup[a.cooldownType] or 99
+		local orderB = orderLookup[b.cooldownType] or 99
+		return orderA < orderB
+	end)
 
 	local bar = self.cooldownBar
 	local buttonSize = bar.buttonSize or 22
@@ -3516,6 +3544,7 @@ function ShamanPower:CreateWeaponImbueButton()
 	-- Add to cooldown buttons array for positioning
 	table.insert(self.cooldownButtons, btn)
 	btn.spellType = "weaponImbue"
+	btn.cooldownType = 7  -- Imbue is type 7 for ordering
 
 	-- Create the flyout
 	self:CreateWeaponImbueFlyout()
@@ -4151,7 +4180,11 @@ function ShamanPower:UpdateMiniTotemBar()
 		self.autoButton:SetSize(buttonSize + (padding * 2), totalHeight)
 	end
 
-	for element = 1, 4 do
+	-- Get the order to display totem buttons
+	local totemOrder = self.opt.totemBarOrder or {1, 2, 3, 4}
+
+	for position = 1, 4 do
+		local element = totemOrder[position]
 		local totemButton = _G["ShamanPowerAutoTotem" .. element]
 		if totemButton then
 			local totemIndex = assignments[element] or 0
@@ -4174,14 +4207,14 @@ function ShamanPower:UpdateMiniTotemBar()
 				iconTexture:SetTexture(icon)
 			end
 
-			-- Reposition buttons based on layout
+			-- Reposition buttons based on layout (use position for layout, element for data)
 			totemButton:ClearAllPoints()
 			if isHorizontal then
 				-- Horizontal: buttons go left to right
-				totemButton:SetPoint("TOPLEFT", self.autoButton, "TOPLEFT", padding + (element - 1) * (buttonSize + spacing), -padding)
+				totemButton:SetPoint("TOPLEFT", self.autoButton, "TOPLEFT", padding + (position - 1) * (buttonSize + spacing), -padding)
 			else
 				-- Vertical: buttons go top to bottom
-				totemButton:SetPoint("TOPLEFT", self.autoButton, "TOPLEFT", padding, -padding - (element - 1) * (buttonSize + spacing))
+				totemButton:SetPoint("TOPLEFT", self.autoButton, "TOPLEFT", padding, -padding - (position - 1) * (buttonSize + spacing))
 			end
 
 			-- Set up the button: left-click casts totem, right-click destroys it

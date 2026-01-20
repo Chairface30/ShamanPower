@@ -93,6 +93,8 @@ SHAMANPOWER_DEFAULT_VALUES = {
         showTotemFlyouts = true,  -- Show flyout menus on mouseover for quick totem selection
         preferredShield = 1,  -- Preferred shield: 1=Lightning Shield, 2=Water Shield
         dropOrder = {1, 2, 3, 4},  -- Order to drop totems: 1=Earth, 2=Fire, 3=Water, 4=Air
+        totemBarOrder = {1, 2, 3, 4},  -- Order of totem buttons on mini bar: 1=Earth, 2=Fire, 3=Water, 4=Air
+        cooldownBarOrder = {1, 2, 3, 4, 5, 6, 7},  -- Order of cooldown bar items: 1=Shield, 2=Recall, 3=Ankh, 4=NS, 5=ManaTide, 6=BL/Hero, 7=Imbues
         skin = "Smooth",
         SmartBuffs = true,
         syncToTotemTimers = false,  -- Sync assignments to TotemTimers addon (if installed)

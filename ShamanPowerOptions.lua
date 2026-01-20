@@ -146,125 +146,12 @@ ShamanPower.options = {
 				-- settings_buffs removed - was PallyPower blessing options not applicable to Shamans
 				settings_frames = {
 					order = 3,
-					name = L["Change the way ShamanPower looks"],
+					name = "Layout & Reset",
 					type = "group",
 					inline = true,
 					args = {
-						buffscale = {
-							order = 1,
-							name = "Totem Bar Scale",
-							desc = "Adjust the size of the totem bar and main ShamanPower buttons",
-							type = "range",
-							width = 1.5,
-							min = 0.4,
-							max = 1.5,
-							step = 0.05,
-							disabled = function(info)
-								return ShamanPower.opt.enabled == false or not isShaman
-							end,
-							get = function(info)
-								return ShamanPower.opt.buffscale
-							end,
-							set = function(info, val)
-								ShamanPower.opt.buffscale = val
-								ShamanPower:UpdateLayout()
-								ShamanPower:UpdateCooldownBarScale()
-								ShamanPower:UpdateRoster()
-							end
-						},
-						cooldownBarScale = {
-							order = 1.5,
-							name = "Cooldown Bar Scale",
-							desc = "Adjust the size of the cooldown tracker bar independently",
-							type = "range",
-							width = 1.5,
-							min = 0.4,
-							max = 1.5,
-							step = 0.05,
-							disabled = function(info)
-								return ShamanPower.opt.enabled == false or not isShaman or not ShamanPower.opt.showCooldownBar
-							end,
-							get = function(info)
-								return ShamanPower.opt.cooldownBarScale or 0.9
-							end,
-							set = function(info, val)
-								ShamanPower.opt.cooldownBarScale = val
-								ShamanPower:UpdateCooldownBarScale()
-							end
-						},
-						unlock_cooldown_bar = {
-							order = 1.6,
-							type = "toggle",
-							name = "Unlock Cooldown Bar",
-							desc = "Allow the cooldown bar to be moved independently from the totem bar (ALT+drag or use drag handle)",
-							width = 1.5,
-							disabled = function(info)
-								return not ShamanPower.opt.showCooldownBar
-							end,
-							get = function(info)
-								return not ShamanPower.opt.cooldownBarLocked
-							end,
-							set = function(info, val)
-								ShamanPower.opt.cooldownBarLocked = not val
-								ShamanPower:UpdateCooldownBarPosition()
-							end
-						},
-						hide_totem_bar_frame = {
-							order = 1.7,
-							type = "toggle",
-							name = "Hide Totem Bar Frame",
-							desc = "Hide the background and border around the totem bar (show icons only)",
-							width = 1.5,
-							get = function(info)
-								return ShamanPower.opt.hideTotemBarFrame
-							end,
-							set = function(info, val)
-								ShamanPower.opt.hideTotemBarFrame = val
-								ShamanPower:UpdateTotemBarFrame()
-							end
-						},
-						hide_cooldown_bar_frame = {
-							order = 1.8,
-							type = "toggle",
-							name = "Hide Cooldown Bar Frame",
-							desc = "Hide the background and border around the cooldown bar (show icons only)",
-							width = 1.5,
-							disabled = function(info)
-								return not ShamanPower.opt.showCooldownBar
-							end,
-							get = function(info)
-								return ShamanPower.opt.hideCooldownBarFrame
-							end,
-							set = function(info, val)
-								ShamanPower.opt.hideCooldownBarFrame = val
-								ShamanPower:UpdateCooldownBarFrame()
-							end
-						},
-						show_button_keybinds = {
-							order = 1.9,
-							type = "toggle",
-							name = "Show Keybinds on Buttons",
-							desc = "Display keybind text on cooldown bar buttons (top-right corner)",
-							width = 1.5,
-							disabled = function(info)
-								return not ShamanPower.opt.showCooldownBar
-							end,
-							get = function(info)
-								return ShamanPower.opt.showButtonKeybinds
-							end,
-							set = function(info, val)
-								ShamanPower.opt.showButtonKeybinds = val
-								ShamanPower:UpdateButtonKeybindText()
-							end
-						},
-						padding1 = {
-							order = 2,
-							name = "",
-							type = "description",
-							width = .2
-						},
 						layout = {
-							order = 3,
+							order = 1,
 							type = "select",
 							width = 1.4,
 							name = L["Buff Button | Player Button Layout"],
@@ -322,54 +209,8 @@ ShamanPower.options = {
 								["VerticalLeft"] = "Vertical (Left)",
 							}
 						},
-						skin = {
-							order = 4,
-							name = L["Background Textures"],
-							desc = L["Change the Button Background Textures"],
-							type = "select",
-							width = 1.5,
-							dialogControl = "LSM30_Background",
-							values = AceGUIWidgetLSMlists.background,
-							disabled = function(info)
-								return ShamanPower.opt.enabled == false or not isShaman
-							end,
-							get = function(info)
-								return ShamanPower.opt.skin
-							end,
-							set = function(info, val)
-								ShamanPower.opt.skin = val
-								ShamanPower:ApplySkin()
-								ShamanPower:UpdateRoster()
-							end
-						},
-						padding2 = {
-							order = 5,
-							name = "",
-							type = "description",
-							width = .2
-						},
-						edges = {
-							order = 6,
-							name = L["Borders"],
-							desc = L["Change the Button Borders"],
-							type = "select",
-							width = 1.4,
-							dialogControl = "LSM30_Border",
-							values = AceGUIWidgetLSMlists.border,
-							disabled = function(info)
-								return ShamanPower.opt.enabled == false or not isShaman
-							end,
-							get = function(info)
-								return ShamanPower.opt.border
-							end,
-							set = function(info, val)
-								ShamanPower.opt.border = val
-								ShamanPower:ApplySkin()
-								ShamanPower:UpdateRoster()
-							end
-						},
 						assignmentsscale = {
-							order = 7,
+							order = 2,
 							name = L["Totem Assignments Scale"],
 							desc = L["This allows you to adjust the overall size of the Totem Assignments Panel"],
 							type = "range",
@@ -389,14 +230,8 @@ ShamanPower.options = {
 								ShamanPower:UpdateRoster()
 							end
 						},
-						padding3 = {
-							order = 8,
-							name = "",
-							type = "description",
-							width = .2
-						},
 						reset = {
-							order = 9,
+							order = 3,
 							name = L["Reset Frames"],
 							desc = L["Reset all ShamanPower frames back to center"],
 							type = "execute",
@@ -407,63 +242,6 @@ ShamanPower.options = {
 								ShamanPower:Reset()
 								ShamanPower:UpdateRoster()
 							end
-						}
-					}
-				},
-				settings_color = {
-					order = 4,
-					name = L["Change the status colors of the buff buttons"],
-					type = "group",
-					inline = true,
-					disabled = function(info)
-						return ShamanPower.opt.enabled == false or not isShaman
-					end,
-					args = {
-						color_good = {
-							order = 1,
-							name = L["Fully Buffed"],
-							type = "color",
-							get = function()
-								return ShamanPower.opt.cBuffGood.r, ShamanPower.opt.cBuffGood.g, ShamanPower.opt.cBuffGood.b, ShamanPower.opt.cBuffGood.t
-							end,
-							set = function(info, r, g, b, t)
-								ShamanPower.opt.cBuffGood.r = r
-								ShamanPower.opt.cBuffGood.g = g
-								ShamanPower.opt.cBuffGood.b = b
-								ShamanPower.opt.cBuffGood.t = t
-							end,
-							hasAlpha = true
-						},
-						color_partial = {
-							order = 2,
-							name = L["Partially Buffed"],
-							type = "color",
-							width = 1.1,
-							get = function()
-								return ShamanPower.opt.cBuffNeedSome.r, ShamanPower.opt.cBuffNeedSome.g, ShamanPower.opt.cBuffNeedSome.b, ShamanPower.opt.cBuffNeedSome.t
-							end,
-							set = function(info, r, g, b, t)
-								ShamanPower.opt.cBuffNeedSome.r = r
-								ShamanPower.opt.cBuffNeedSome.g = g
-								ShamanPower.opt.cBuffNeedSome.b = b
-								ShamanPower.opt.cBuffNeedSome.t = t
-							end,
-							hasAlpha = true
-						},
-						color_missing = {
-							order = 3,
-							name = L["None Buffed"],
-							type = "color",
-							get = function()
-								return ShamanPower.opt.cBuffNeedAll.r, ShamanPower.opt.cBuffNeedAll.g, ShamanPower.opt.cBuffNeedAll.b, ShamanPower.opt.cBuffNeedAll.t
-							end,
-							set = function(info, r, g, b, t)
-								ShamanPower.opt.cBuffNeedAll.r = r
-								ShamanPower.opt.cBuffNeedAll.g = g
-								ShamanPower.opt.cBuffNeedAll.b = b
-								ShamanPower.opt.cBuffNeedAll.t = t
-							end,
-							hasAlpha = true
 						}
 					}
 				}
@@ -697,20 +475,6 @@ ShamanPower.options = {
 							end,
 							set = function(info, val)
 								ShamanPower.opt.showTotemFlyouts = val
-							end
-						},
-						hide_earth_shield_text = {
-							order = 2.26,
-							type = "toggle",
-							name = "Hide Earth Shield Text",
-							desc = "[Enable/Disable] Hide the Earth Shield target name text below the button on the totem bar",
-							width = 1.3,
-							get = function(info)
-								return ShamanPower.opt.hideEarthShieldText
-							end,
-							set = function(info, val)
-								ShamanPower.opt.hideEarthShieldText = val
-								ShamanPower:UpdateEarthShieldButton()
 							end
 						},
 						drop_order_header = {
@@ -1404,63 +1168,6 @@ ShamanPower.options = {
 								end
 							end
 						},
-						cdbar_display_header = {
-							order = 2.99,
-							type = "description",
-							name = "\n|cffffd200Cooldown Display:|r Choose how cooldowns are shown",
-							fontSize = "medium",
-							hidden = function(info)
-								return not ShamanPower.opt.showCooldownBar
-							end,
-						},
-						cdbar_show_progress_bars = {
-							order = 2.991,
-							type = "toggle",
-							name = "Progress Bars",
-							desc = "Show colored progress bars on the edges of cooldown buttons",
-							width = 0.7,
-							hidden = function(info)
-								return not ShamanPower.opt.showCooldownBar
-							end,
-							get = function(info)
-								return ShamanPower.opt.cdbarShowProgressBars ~= false
-							end,
-							set = function(info, val)
-								ShamanPower.opt.cdbarShowProgressBars = val
-							end
-						},
-						cdbar_show_color_sweep = {
-							order = 2.992,
-							type = "toggle",
-							name = "Color Sweep",
-							desc = "Show greyed-out sweep overlay as time depletes",
-							width = 0.7,
-							hidden = function(info)
-								return not ShamanPower.opt.showCooldownBar
-							end,
-							get = function(info)
-								return ShamanPower.opt.cdbarShowColorSweep ~= false
-							end,
-							set = function(info, val)
-								ShamanPower.opt.cdbarShowColorSweep = val
-							end
-						},
-						cdbar_show_cd_text = {
-							order = 2.993,
-							type = "toggle",
-							name = "CD Text",
-							desc = "Show cooldown time remaining as text",
-							width = 0.55,
-							hidden = function(info)
-								return not ShamanPower.opt.showCooldownBar
-							end,
-							get = function(info)
-								return ShamanPower.opt.cdbarShowCDText ~= false
-							end,
-							set = function(info, val)
-								ShamanPower.opt.cdbarShowCDText = val
-							end
-						},
 						auto_wait = {
 							order = 3,
 							type = "toggle",
@@ -1570,43 +1277,381 @@ ShamanPower.options = {
 							end
 						}
 					}
+				}
+			}
+		},
+		fluffy = {
+			order = 3,
+			name = "Fluffy Settings",
+			desc = "UI customization options (requested by FluffyKable)",
+			type = "group",
+			cmdHidden = true,
+			disabled = function(info)
+				return ShamanPower.opt.enabled == false
+			end,
+			args = {
+				fluffy_header = {
+					order = 0,
+					type = "description",
+					name = "|cffffd200Fluffy Settings|r\nUI customization options - dedicated to FluffyKable from the Shaman Discord.\n",
+					fontSize = "medium",
 				},
-				drag_button = {
-					order = 5,
-					name = L["Drag Handle Button"],
+				scale_section = {
+					order = 1,
+					name = "Scale",
 					type = "group",
 					inline = true,
-					disabled = function(info)
-						return ShamanPower.opt.enabled == false
-					end,
 					args = {
-						misc_desc = {
-							order = 0,
-							type = "description",
-							name = L["[|cffffd200Enable|r/|cffffd200Disable|r] The Drag Handle Button."]
+						buffscale = {
+							order = 1,
+							name = "Totem Bar Scale",
+							desc = "Adjust the size of the totem bar and main ShamanPower buttons",
+							type = "range",
+							width = 1.5,
+							min = 0.4,
+							max = 1.5,
+							step = 0.05,
+							disabled = function(info)
+								return ShamanPower.opt.enabled == false or not isShaman
+							end,
+							get = function(info)
+								return ShamanPower.opt.buffscale
+							end,
+							set = function(info, val)
+								ShamanPower.opt.buffscale = val
+								ShamanPower:UpdateLayout()
+								ShamanPower:UpdateCooldownBarScale()
+								ShamanPower:UpdateRoster()
+							end
+						},
+						cooldownBarScale = {
+							order = 2,
+							name = "Cooldown Bar Scale",
+							desc = "Adjust the size of the cooldown tracker bar independently",
+							type = "range",
+							width = 1.5,
+							min = 0.4,
+							max = 1.5,
+							step = 0.05,
+							disabled = function(info)
+								return ShamanPower.opt.enabled == false or not isShaman or not ShamanPower.opt.showCooldownBar
+							end,
+							get = function(info)
+								return ShamanPower.opt.cooldownBarScale or 0.9
+							end,
+							set = function(info, val)
+								ShamanPower.opt.cooldownBarScale = val
+								ShamanPower:UpdateCooldownBarScale()
+							end
+						},
+					}
+				},
+				padding_section = {
+					order = 2,
+					name = "Button Padding",
+					type = "group",
+					inline = true,
+					args = {
+						totemBarPadding = {
+							order = 1,
+							name = "Totem Bar Padding",
+							desc = "Adjust the spacing between totem bar buttons (in pixels)",
+							type = "range",
+							width = 1.5,
+							min = 0,
+							max = 20,
+							step = 1,
+							disabled = function(info)
+								return ShamanPower.opt.enabled == false or not isShaman
+							end,
+							get = function(info)
+								return ShamanPower.opt.totemBarPadding or 2
+							end,
+							set = function(info, val)
+								ShamanPower.opt.totemBarPadding = val
+								ShamanPower:UpdateRoster()
+							end
+						},
+						cooldownBarPadding = {
+							order = 2,
+							name = "Cooldown Bar Padding",
+							desc = "Adjust the spacing between cooldown bar buttons (in pixels)",
+							type = "range",
+							width = 1.5,
+							min = 0,
+							max = 20,
+							step = 1,
+							disabled = function(info)
+								return ShamanPower.opt.enabled == false or not isShaman or not ShamanPower.opt.showCooldownBar
+							end,
+							get = function(info)
+								return ShamanPower.opt.cooldownBarPadding or 2
+							end,
+							set = function(info, val)
+								ShamanPower.opt.cooldownBarPadding = val
+								ShamanPower:UpdateCooldownBar()
+							end
+						},
+					}
+				},
+				visibility_section = {
+					order = 3,
+					name = "Frame Visibility",
+					type = "group",
+					inline = true,
+					args = {
+						hide_totem_bar_frame = {
+							order = 1,
+							type = "toggle",
+							name = "Hide Totem Bar Frame",
+							desc = "Hide the background and border around the totem bar (show icons only)",
+							width = 1.5,
+							get = function(info)
+								return ShamanPower.opt.hideTotemBarFrame
+							end,
+							set = function(info, val)
+								ShamanPower.opt.hideTotemBarFrame = val
+								ShamanPower:UpdateTotemBarFrame()
+							end
+						},
+						hide_cooldown_bar_frame = {
+							order = 2,
+							type = "toggle",
+							name = "Hide Cooldown Bar Frame",
+							desc = "Hide the background and border around the cooldown bar (show icons only)",
+							width = 1.5,
+							disabled = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							get = function(info)
+								return ShamanPower.opt.hideCooldownBarFrame
+							end,
+							set = function(info, val)
+								ShamanPower.opt.hideCooldownBarFrame = val
+								ShamanPower:UpdateCooldownBarFrame()
+							end
+						},
+						hide_earth_shield_text = {
+							order = 3,
+							type = "toggle",
+							name = "Hide Earth Shield Text",
+							desc = "Hide the Earth Shield target name text below the button on the totem bar",
+							width = 1.5,
+							get = function(info)
+								return ShamanPower.opt.hideEarthShieldText
+							end,
+							set = function(info, val)
+								ShamanPower.opt.hideEarthShieldText = val
+								ShamanPower:UpdateEarthShieldButton()
+							end
+						},
+						show_button_keybinds = {
+							order = 4,
+							type = "toggle",
+							name = "Show Keybinds on Buttons",
+							desc = "Display keybind text on buttons (top-right corner)",
+							width = 1.5,
+							get = function(info)
+								return ShamanPower.opt.showButtonKeybinds
+							end,
+							set = function(info, val)
+								ShamanPower.opt.showButtonKeybinds = val
+								ShamanPower:UpdateButtonKeybindText()
+							end
+						},
+						unlock_cooldown_bar = {
+							order = 5,
+							type = "toggle",
+							name = "Unlock Cooldown Bar",
+							desc = "Allow the cooldown bar to be moved independently from the totem bar (ALT+drag or use drag handle)",
+							width = 1.5,
+							disabled = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							get = function(info)
+								return not ShamanPower.opt.cooldownBarLocked
+							end,
+							set = function(info, val)
+								ShamanPower.opt.cooldownBarLocked = not val
+								ShamanPower:UpdateCooldownBarPosition()
+							end
 						},
 						drag_enable = {
-							order = 1,
+							order = 6,
 							type = "toggle",
 							name = L["Drag Handle"],
 							desc = L["[Enable/Disable] The Drag Handle"],
-							width = 1.1,
+							width = 1.5,
 							get = function(info)
 								return ShamanPower.opt.display.enableDragHandle
 							end,
 							set = function(info, val)
 								ShamanPower.opt.display.enableDragHandle = val
 								ShamanPower:UpdateRoster()
-								-- Also update cooldown bar drag handle visibility
 								ShamanPower:UpdateCooldownBarPosition()
 							end
+						},
+					}
+				},
+				texture_section = {
+					order = 4,
+					name = "Textures",
+					type = "group",
+					inline = true,
+					args = {
+						skin = {
+							order = 1,
+							name = L["Background Textures"],
+							desc = L["Change the Button Background Textures"],
+							type = "select",
+							width = 1.5,
+							dialogControl = "LSM30_Background",
+							values = AceGUIWidgetLSMlists.background,
+							disabled = function(info)
+								return ShamanPower.opt.enabled == false or not isShaman
+							end,
+							get = function(info)
+								return ShamanPower.opt.skin
+							end,
+							set = function(info, val)
+								ShamanPower.opt.skin = val
+								ShamanPower:ApplySkin()
+								ShamanPower:UpdateRoster()
+							end
+						},
+						edges = {
+							order = 2,
+							name = L["Borders"],
+							desc = L["Change the Button Borders"],
+							type = "select",
+							width = 1.5,
+							dialogControl = "LSM30_Border",
+							values = AceGUIWidgetLSMlists.border,
+							disabled = function(info)
+								return ShamanPower.opt.enabled == false or not isShaman
+							end,
+							get = function(info)
+								return ShamanPower.opt.border
+							end,
+							set = function(info, val)
+								ShamanPower.opt.border = val
+								ShamanPower:ApplySkin()
+								ShamanPower:UpdateRoster()
+							end
+						},
+					}
+				},
+				cooldown_display_section = {
+					order = 5,
+					name = "Cooldown Display",
+					type = "group",
+					inline = true,
+					hidden = function(info)
+						return not ShamanPower.opt.showCooldownBar
+					end,
+					args = {
+						cdbar_show_progress_bars = {
+							order = 1,
+							type = "toggle",
+							name = "Progress Bars",
+							desc = "Show colored progress bars on the edges of cooldown buttons",
+							width = 0.8,
+							get = function(info)
+								return ShamanPower.opt.cdbarShowProgressBars ~= false
+							end,
+							set = function(info, val)
+								ShamanPower.opt.cdbarShowProgressBars = val
+							end
+						},
+						cdbar_show_color_sweep = {
+							order = 2,
+							type = "toggle",
+							name = "Color Sweep",
+							desc = "Show greyed-out sweep overlay as time depletes",
+							width = 0.8,
+							get = function(info)
+								return ShamanPower.opt.cdbarShowColorSweep ~= false
+							end,
+							set = function(info, val)
+								ShamanPower.opt.cdbarShowColorSweep = val
+							end
+						},
+						cdbar_show_cd_text = {
+							order = 3,
+							type = "toggle",
+							name = "CD Text",
+							desc = "Show cooldown time remaining as text",
+							width = 0.6,
+							get = function(info)
+								return ShamanPower.opt.cdbarShowCDText ~= false
+							end,
+							set = function(info, val)
+								ShamanPower.opt.cdbarShowCDText = val
+							end
+						},
+					}
+				},
+				color_section = {
+					order = 6,
+					name = L["Change the status colors of the buff buttons"],
+					type = "group",
+					inline = true,
+					disabled = function(info)
+						return ShamanPower.opt.enabled == false or not isShaman
+					end,
+					args = {
+						color_good = {
+							order = 1,
+							name = L["Fully Buffed"],
+							type = "color",
+							get = function()
+								return ShamanPower.opt.cBuffGood.r, ShamanPower.opt.cBuffGood.g, ShamanPower.opt.cBuffGood.b, ShamanPower.opt.cBuffGood.t
+							end,
+							set = function(info, r, g, b, t)
+								ShamanPower.opt.cBuffGood.r = r
+								ShamanPower.opt.cBuffGood.g = g
+								ShamanPower.opt.cBuffGood.b = b
+								ShamanPower.opt.cBuffGood.t = t
+							end,
+							hasAlpha = true
+						},
+						color_partial = {
+							order = 2,
+							name = L["Partially Buffed"],
+							type = "color",
+							width = 1.1,
+							get = function()
+								return ShamanPower.opt.cBuffNeedSome.r, ShamanPower.opt.cBuffNeedSome.g, ShamanPower.opt.cBuffNeedSome.b, ShamanPower.opt.cBuffNeedSome.t
+							end,
+							set = function(info, r, g, b, t)
+								ShamanPower.opt.cBuffNeedSome.r = r
+								ShamanPower.opt.cBuffNeedSome.g = g
+								ShamanPower.opt.cBuffNeedSome.b = b
+								ShamanPower.opt.cBuffNeedSome.t = t
+							end,
+							hasAlpha = true
+						},
+						color_missing = {
+							order = 3,
+							name = L["None Buffed"],
+							type = "color",
+							get = function()
+								return ShamanPower.opt.cBuffNeedAll.r, ShamanPower.opt.cBuffNeedAll.g, ShamanPower.opt.cBuffNeedAll.b, ShamanPower.opt.cBuffNeedAll.t
+							end,
+							set = function(info, r, g, b, t)
+								ShamanPower.opt.cBuffNeedAll.r = r
+								ShamanPower.opt.cBuffNeedAll.g = g
+								ShamanPower.opt.cBuffNeedAll.b = b
+								ShamanPower.opt.cBuffNeedAll.t = t
+							end,
+							hasAlpha = true
 						}
 					}
-				}
+				},
 			}
 		},
 		raids = {
-			order = 3,
+			order = 4,
 			name = _G.RAID,
 			desc = L["Raid only options"],
 			type = "group",

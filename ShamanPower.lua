@@ -4708,31 +4708,86 @@ function ShamanPower:CreateEarthShieldButton()
 	-- Tooltip
 	esBtn:SetScript("OnEnter", function(self)
 		if not ShamanPower.opt.ShowTooltips then return end
-		local target = ShamanPower_EarthShieldAssignments[ShamanPower.player]
+		local assignedTarget = ShamanPower_EarthShieldAssignments[ShamanPower.player]
+		local currentTarget, charges = ShamanPower:FindEarthShieldTarget()
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		GameTooltip:AddLine("Earth Shield", 0.2, 0.8, 0.2)
-		if target then
-			local charges = ShamanPower:GetEarthShieldCharges(target)
-			GameTooltip:AddLine("Target: " .. target, 1, 1, 1)
+
+		if currentTarget then
+			GameTooltip:AddLine("Active on: " .. currentTarget, 0, 1, 0)
 			if charges and charges > 0 then
-				GameTooltip:AddLine("Charges: " .. charges, 0, 1, 0)
-			else
-				GameTooltip:AddLine("Not active", 1, 0.5, 0)
+				GameTooltip:AddLine("Charges: " .. charges, 1, 1, 1)
 			end
-			GameTooltip:AddLine("Click to cast on " .. target, 0.7, 0.7, 0.7)
 		else
-			GameTooltip:AddLine("No target assigned", 1, 0, 0)
+			GameTooltip:AddLine("Not active on anyone", 1, 0.3, 0.3)
+		end
+
+		-- Show assigned target if different from current
+		if assignedTarget and currentTarget ~= assignedTarget then
+			local assignedDead = ShamanPower:IsPlayerDead(assignedTarget)
+			if assignedDead then
+				GameTooltip:AddLine("Assigned: " .. assignedTarget .. " (dead)", 0.5, 0.5, 0.5)
+			else
+				GameTooltip:AddLine("Assigned: " .. assignedTarget, 1, 0.8, 0)
+			end
+		end
+
+		-- Determine who click will cast on (same logic as button)
+		local castTarget = nil
+		if assignedTarget and not ShamanPower:IsPlayerDead(assignedTarget) then
+			castTarget = assignedTarget
+		elseif currentTarget and not ShamanPower:IsPlayerDead(currentTarget) then
+			castTarget = currentTarget
+		end
+
+		if castTarget then
+			GameTooltip:AddLine("Click to cast on " .. castTarget, 0.7, 0.7, 0.7)
+		else
+			GameTooltip:AddLine("Click to cast on current target", 0.7, 0.7, 0.7)
 		end
 		GameTooltip:Show()
 	end)
 	esBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-	-- Update charges periodically
+	-- Update charges and button periodically
 	esBtn:SetScript("OnUpdate", function(self, elapsed)
 		self.timeSinceLastUpdate = (self.timeSinceLastUpdate or 0) + elapsed
 		if self.timeSinceLastUpdate > 0.5 then  -- Update every 0.5 seconds
 			self.timeSinceLastUpdate = 0
 			ShamanPower:UpdateEarthShieldCharges()
+			-- Update button display (name color) based on current target
+			local esName = _G["ShamanPowerEarthShieldBtnName"]
+			local esIcon = _G["ShamanPowerEarthShieldBtnIcon"]
+			if esName and not ShamanPower.opt.hideEarthShieldText then
+				local currentTarget = ShamanPower.currentEarthShieldTarget
+				local assignedTarget = ShamanPower_EarthShieldAssignments[ShamanPower.player]
+				if currentTarget then
+					local shortName = Ambiguate(currentTarget, "short")
+					esName:SetText(shortName)
+					if assignedTarget and currentTarget == assignedTarget then
+						esName:SetTextColor(0.2, 1, 0.2)  -- Green
+					else
+						esName:SetTextColor(1, 0.8, 0)  -- Yellow/Gold
+					end
+					if esIcon then
+						esIcon:SetDesaturated(false)
+						esIcon:SetVertexColor(1, 1, 1)
+					end
+				else
+					if assignedTarget then
+						local shortName = Ambiguate(assignedTarget, "short")
+						esName:SetText(shortName)
+						esName:SetTextColor(1, 0.3, 0.3)  -- Red
+					else
+						esName:SetText("None")
+						esName:SetTextColor(0.5, 0.5, 0.5)  -- Grey
+					end
+					if esIcon then
+						esIcon:SetDesaturated(true)
+						esIcon:SetVertexColor(0.6, 0.6, 0.6)
+					end
+				end
+			end
 		end
 	end)
 
@@ -4793,24 +4848,78 @@ function ShamanPower:GetEarthShieldCharges(targetName)
 	return 0
 end
 
+-- Find who currently has YOUR Earth Shield buff (scans party/raid)
+function ShamanPower:FindEarthShieldTarget()
+	if not self.EarthShield then return nil, 0 end
+
+	-- Get the localized spell name for Earth Shield
+	local esSpellName = GetSpellInfo(self.EarthShield.rank3) or GetSpellInfo(self.EarthShield.rank2) or GetSpellInfo(self.EarthShield.rank1)
+	if not esSpellName then return nil, 0 end
+
+	local playerName = self.player
+
+	-- Helper function to check a unit for Earth Shield cast by player
+	local function checkUnit(unit)
+		if not UnitExists(unit) then return nil, 0 end
+		for i = 1, 40 do
+			local name, icon, count, debuffType, duration, expirationTime, source = UnitBuff(unit, i)
+			if not name then break end
+			if name == esSpellName then
+				-- Check if we cast it (source is "player" for our own buffs)
+				if source == "player" then
+					local unitName = UnitName(unit)
+					return unitName, count or 0
+				end
+			end
+		end
+		return nil, 0
+	end
+
+	-- Check player first
+	local foundName, foundCharges = checkUnit("player")
+	if foundName then return foundName, foundCharges end
+
+	-- Check raid or party members
+	if IsInRaid() then
+		for i = 1, 40 do
+			foundName, foundCharges = checkUnit("raid" .. i)
+			if foundName then return foundName, foundCharges end
+		end
+	else
+		for i = 1, 4 do
+			foundName, foundCharges = checkUnit("party" .. i)
+			if foundName then return foundName, foundCharges end
+		end
+	end
+
+	return nil, 0
+end
+
 -- Update the charge display on the button
 function ShamanPower:UpdateEarthShieldCharges()
 	local chargeText = _G["ShamanPowerEarthShieldBtnCharges"]
 	if not chargeText then return end
 
-	local targetName = ShamanPower_EarthShieldAssignments[self.player]
-	if not targetName then
-		chargeText:SetText("")
-		return
-	end
+	-- Find who currently has our Earth Shield
+	local currentTarget, charges = self:FindEarthShieldTarget()
 
-	local charges = self:GetEarthShieldCharges(targetName)
-	if charges and charges > 0 then
+	if currentTarget and charges and charges > 0 then
 		chargeText:SetText(tostring(charges))
 		chargeText:SetTextColor(1, 1, 1)  -- White
 	else
 		chargeText:SetText("")
 	end
+
+	-- Store current target for display purposes
+	self.currentEarthShieldTarget = currentTarget
+end
+
+-- Check if a player is dead (by name)
+function ShamanPower:IsPlayerDead(playerName)
+	if not playerName then return true end
+	local unit = self:GetUnitFromName(playerName)
+	if not unit then return true end  -- Can't find them, treat as unavailable
+	return UnitIsDeadOrGhost(unit)
 end
 
 function ShamanPower:UpdateEarthShieldButton()
@@ -4826,32 +4935,77 @@ function ShamanPower:UpdateEarthShieldButton()
 	local esIcon = _G["ShamanPowerEarthShieldBtnIcon"]
 	local esName = _G["ShamanPowerEarthShieldBtnName"]
 
-	-- Check if we have Earth Shield and a target assigned
+	-- Check if we have Earth Shield talent
 	local hasES = self:HasEarthShield()
-	local targetName = ShamanPower_EarthShieldAssignments[self.player]
+	local assignedTarget = ShamanPower_EarthShieldAssignments[self.player]
 
-	if hasES and targetName then
+	-- Find who currently has our Earth Shield (fetch fresh, don't rely on cached value)
+	local currentTarget, currentCharges = self:FindEarthShieldTarget()
+	self.currentEarthShieldTarget = currentTarget  -- Update cache
+
+	if hasES then
 		-- Get the spell name
 		local spellName = self:GetEarthShieldSpell()
 		if spellName then
-			-- Set up the button to target and cast Earth Shield
-			-- Using a macro to target the player and cast
-			-- Use type1/macrotext1 for left-click (needed for /click macro to work)
-			esBtn:SetAttribute("type1", "macro")
-			esBtn:SetAttribute("macrotext1", "/target " .. targetName .. "\n/cast " .. spellName .. "\n/targetlasttarget")
+			-- Determine who to cast on:
+			-- 1. If assigned target exists and is alive, use them
+			-- 2. Else if someone currently/recently had ES (currentTarget), use them
+			-- 3. Otherwise, cast on current target
+			local castTarget = nil
+			if assignedTarget and not self:IsPlayerDead(assignedTarget) then
+				castTarget = assignedTarget
+			elseif currentTarget and not self:IsPlayerDead(currentTarget) then
+				castTarget = currentTarget
+			end
+
+			if castTarget then
+				esBtn:SetAttribute("type1", "macro")
+				esBtn:SetAttribute("macrotext1", "/target " .. castTarget .. "\n/cast " .. spellName .. "\n/targetlasttarget")
+			else
+				-- No valid target - just cast on current target
+				esBtn:SetAttribute("type1", "spell")
+				esBtn:SetAttribute("spell1", spellName)
+			end
 
 			-- Update icon
 			if esIcon then
 				esIcon:SetTexture(self.EarthShield.icon)
+				-- Desaturate icon if no one has ES
+				if not currentTarget then
+					esIcon:SetDesaturated(true)
+					esIcon:SetVertexColor(0.6, 0.6, 0.6)
+				else
+					esIcon:SetDesaturated(false)
+					esIcon:SetVertexColor(1, 1, 1)
+				end
 			end
 
-			-- Show target name (unless hidden by option)
+			-- Show who currently has Earth Shield (unless hidden by option)
 			if esName then
 				if self.opt.hideEarthShieldText then
 					esName:Hide()
 				else
-					local shortName = Ambiguate(targetName, "short")
-					esName:SetText(shortName)
+					if currentTarget then
+						-- Someone has ES - show their name
+						local shortName = Ambiguate(currentTarget, "short")
+						esName:SetText(shortName)
+						-- Color based on whether it's the assigned target
+						if assignedTarget and currentTarget == assignedTarget then
+							esName:SetTextColor(0.2, 1, 0.2)  -- Green - on assigned target
+						else
+							esName:SetTextColor(1, 0.8, 0)  -- Yellow/Gold - on someone else
+						end
+					else
+						-- No one has ES
+						if assignedTarget then
+							local shortName = Ambiguate(assignedTarget, "short")
+							esName:SetText(shortName)
+							esName:SetTextColor(1, 0.3, 0.3)  -- Red - not active
+						else
+							esName:SetText("None")
+							esName:SetTextColor(0.5, 0.5, 0.5)  -- Grey
+						end
+					end
 					esName:Show()
 				end
 			end
@@ -5741,11 +5895,17 @@ function ShamanPower:GROUP_LEFT(event)
 			ShamanPower_Assignments[pname] = nil
 		end
 	end
+
+	-- Clear Earth Shield assignments when leaving group
+	ShamanPower_EarthShieldAssignments = {}
+	self.currentEarthShieldTarget = nil
+
 	self:ScanSpells()
 	self:ScanCooldowns()
 	self:ScanInventory()
 	self:UpdateLayout()
 	self:UpdateRoster()
+	self:UpdateEarthShieldButton()
 end
 
 function ShamanPower:UpdateAllShamans()

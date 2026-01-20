@@ -1,6 +1,12 @@
 # ShamanPower Changelog
 
-## [v1.3.3](https://github.com/taubut/ShamanPower/tree/beta) (2026-01-20)
+## [v1.3.4](https://github.com/taubut/ShamanPower/releases/tag/v1.3.4) (2026-01-20)
+- Earth Shield tracking now works on any target (not just assigned target)
+- Shows who currently has your Earth Shield with color-coded names (green=assigned, yellow=other, red=inactive)
+- Smart re-apply: button casts on last ES target if assigned target is dead or unassigned
+- Earth Shield assignments auto-clear when leaving group/raid/BG
+
+## [v1.3.3](https://github.com/taubut/ShamanPower/releases/tag/v1.3.3) (2026-01-20)
 - Add "Look & Feel" tab for UI customization (dedicated to FluffyKable)
 - Add Button Padding sliders for Totem Bar and Cooldown Bar spacing
 - Move Layout dropdown and Totem Assignments Scale to Look & Feel

@@ -181,7 +181,7 @@ function ShamanPower:OnInitialize()
 		{
 			["type"] = "data source",
 			["text"] = "ShamanPower",
-			["icon"] = "Interface\\AddOns\\ShamanPower\\Icons\\SummonChampion",
+			["icon"] = "Interface\\Icons\\ClassIcon_Shaman",
 			["OnTooltipShow"] = function(tooltip)
 				if self.opt.ShowTooltips then
 					tooltip:SetText(SHAMANPOWER_NAME)
@@ -2188,6 +2188,57 @@ end
 
 ShamanPower.totemFlyouts = {}  -- Flyout frames for each element
 
+-- Helper function to check if player knows a totem spell
+-- Uses spellbook search since IsSpellKnown doesn't work reliably in Classic
+local function PlayerKnowsTotem(spellID, totemName)
+	if not spellID then return false end
+
+	-- First try GetSpellInfo - if it returns nil, the spell doesn't exist
+	local spellName = GetSpellInfo(spellID)
+
+	-- Build a list of names to search for
+	local searchNames = {}
+	if spellName then
+		table.insert(searchNames, spellName)
+	end
+	if totemName then
+		table.insert(searchNames, totemName)
+		-- Also try with " Totem" suffix removed/added
+		if totemName:find(" Totem$") then
+			table.insert(searchNames, totemName:gsub(" Totem$", ""))
+		else
+			table.insert(searchNames, totemName .. " Totem")
+		end
+	end
+
+	if #searchNames == 0 then return false end
+
+	-- Search the spellbook for this spell
+	local i = 1
+	while true do
+		local bookName, bookSubName = GetSpellBookItemName(i, BOOKTYPE_SPELL)
+		if not bookName then break end
+
+		for _, searchName in ipairs(searchNames) do
+			-- Check for exact match
+			if bookName == searchName then
+				return true
+			end
+			-- Check if spellbook entry starts with our search name (handles ranks)
+			if bookName:find("^" .. searchName:gsub("([%(%)%.%%%+%-%*%?%[%^%$])", "%%%1")) then
+				return true
+			end
+		end
+
+		i = i + 1
+	end
+
+	return false
+end
+
+-- Track if we've already hooked the totem buttons
+ShamanPower.flyoutHooksInstalled = {}
+
 -- Create flyout menu for an element
 function ShamanPower:CreateTotemFlyout(element)
 	if self.totemFlyouts[element] then return self.totemFlyouts[element] end
@@ -2224,9 +2275,12 @@ function ShamanPower:CreateTotemFlyout(element)
 	local spacing = 2
 
 	for totemIndex, spellID in pairs(totems) do
-		-- Check if player knows this totem
+		-- Check if player knows this totem using improved spellbook search
 		local spellName = GetSpellInfo(spellID)
-		if spellName and IsSpellKnown(spellID) then
+		local totemName = totemNames and totemNames[totemIndex]
+		local isKnown = PlayerKnowsTotem(spellID, totemName)
+
+		if isKnown then
 			local btn = CreateFrame("Button", "ShamanPowerFlyout" .. element .. "Btn" .. totemIndex, flyout, "SecureActionButtonTemplate")
 			btn:SetSize(buttonSize, buttonSize)
 			btn:RegisterForClicks("LeftButtonUp", "LeftButtonDown", "RightButtonUp")
@@ -2273,6 +2327,14 @@ function ShamanPower:CreateTotemFlyout(element)
 					ShamanPower_Assignments[ShamanPower.player][element] = self.totemIndex
 					-- Refresh the main bar
 					ShamanPower:UpdateMiniTotemBar()
+					-- Update the Drop All button
+					ShamanPower:UpdateDropAllButton()
+					-- Update macros when assignment changes
+					ShamanPower:UpdateSPMacros()
+					-- Sync to TotemTimers if enabled
+					ShamanPower:SyncToTotemTimers(element, self.totemIndex)
+					-- Send assignment to other players
+					ShamanPower:SendMessage("ASSIGN " .. ShamanPower.player .. " " .. element .. " " .. self.totemIndex)
 					-- Hide the flyout
 					flyout:Hide()
 				end
@@ -2284,10 +2346,59 @@ function ShamanPower:CreateTotemFlyout(element)
 		end
 	end
 
-	-- Position buttons vertically
+	-- Sort buttons by totemIndex for consistent ordering
+	table.sort(buttons, function(a, b) return a.totemIndex < b.totemIndex end)
+
+	-- Store layout constants for later repositioning
+	flyout.buttonSize = buttonSize
+	flyout.padding = padding
+	flyout.spacing = spacing
+	flyout.buttons = buttons
+	flyout.element = element
+
+	-- Initial layout (will be updated in PositionFlyout)
+	self:LayoutFlyoutButtons(flyout)
+
+	self.totemFlyouts[element] = flyout
+
+	return flyout
+end
+
+-- Layout flyout buttons based on current bar orientation
+-- For horizontal bar: flyout is VERTICAL (buttons stacked)
+-- For vertical bar: flyout is HORIZONTAL (buttons in a row)
+function ShamanPower:LayoutFlyoutButtons(flyout, flyoutIsHorizontal)
+	if not flyout or not flyout.buttons then return end
+
+	local buttons = flyout.buttons
 	local numButtons = #buttons
+	local buttonSize = flyout.buttonSize or 28
+	local padding = flyout.padding or 4
+	local spacing = flyout.spacing or 2
+
+	-- Default: if bar is horizontal, flyout is vertical (and vice versa)
+	if flyoutIsHorizontal == nil then
+		local isHorizontalBar = (self.opt.layout == "Horizontal")
+		flyoutIsHorizontal = not isHorizontalBar
+	end
+
+	flyout.isHorizontal = flyoutIsHorizontal
+
 	if numButtons == 0 then
 		flyout:SetSize(buttonSize + padding * 2, buttonSize + padding * 2)
+		return
+	end
+
+	-- Calculate size based on orientation
+	if flyoutIsHorizontal then
+		local width = (buttonSize * numButtons) + (spacing * (numButtons - 1)) + (padding * 2)
+		flyout:SetSize(width, buttonSize + padding * 2)
+
+		for i, btn in ipairs(buttons) do
+			btn:ClearAllPoints()
+			btn:SetPoint("LEFT", flyout, "LEFT", padding + (i - 1) * (buttonSize + spacing), 0)
+			btn:Show()
+		end
 	else
 		local height = (buttonSize * numButtons) + (spacing * (numButtons - 1)) + (padding * 2)
 		flyout:SetSize(buttonSize + padding * 2, height)
@@ -2295,57 +2406,145 @@ function ShamanPower:CreateTotemFlyout(element)
 		for i, btn in ipairs(buttons) do
 			btn:ClearAllPoints()
 			btn:SetPoint("TOP", flyout, "TOP", 0, -padding - (i - 1) * (buttonSize + spacing))
+			btn:Show()
 		end
 	end
-
-	flyout.buttons = buttons
-	flyout.element = element
-	self.totemFlyouts[element] = flyout
-
-	return flyout
 end
 
--- Update flyout to hide currently assigned totem
+-- Position flyout relative to totem button, reversing direction if needed
+-- For horizontal bar layout: flyout extends vertically (above/below)
+-- For vertical bar layout: flyout extends horizontally (left/right)
+function ShamanPower:PositionFlyout(flyout, totemButton)
+	if not flyout or not totemButton then return end
+
+	local isHorizontalBar = (self.opt.layout == "Horizontal")
+
+	-- Match the scale of the parent button's frame
+	local parentScale = totemButton:GetEffectiveScale() / UIParent:GetEffectiveScale()
+	flyout:SetScale(parentScale)
+
+	-- Get screen dimensions
+	local screenWidth = GetScreenWidth()
+	local screenHeight = GetScreenHeight()
+
+	-- Get totem button position
+	local buttonLeft = totemButton:GetLeft() or 0
+	local buttonRight = totemButton:GetRight() or 0
+	local buttonTop = totemButton:GetTop() or 0
+	local buttonBottom = totemButton:GetBottom() or 0
+
+	-- Get flyout dimensions (adjusted for scale)
+	local flyoutWidth = flyout:GetWidth() * parentScale
+	local flyoutHeight = flyout:GetHeight() * parentScale
+
+	flyout:ClearAllPoints()
+
+	if isHorizontalBar then
+		-- Horizontal bar: flyout is VERTICAL and goes above or below
+		local spaceAbove = screenHeight - buttonTop
+		local spaceBelow = buttonBottom
+
+		if spaceAbove >= flyoutHeight + 2 then
+			flyout:SetPoint("BOTTOM", totemButton, "TOP", 0, 2)
+		elseif spaceBelow >= flyoutHeight + 2 then
+			flyout:SetPoint("TOP", totemButton, "BOTTOM", 0, -2)
+		elseif spaceAbove >= spaceBelow then
+			flyout:SetPoint("BOTTOM", totemButton, "TOP", 0, 2)
+		else
+			flyout:SetPoint("TOP", totemButton, "BOTTOM", 0, -2)
+		end
+	else
+		-- Vertical bar: flyout is HORIZONTAL and goes left or right
+		local spaceRight = screenWidth - buttonRight
+		local spaceLeft = buttonLeft
+
+		if spaceRight >= flyoutWidth + 2 then
+			flyout:SetPoint("LEFT", totemButton, "RIGHT", 2, 0)
+		elseif spaceLeft >= flyoutWidth + 2 then
+			flyout:SetPoint("RIGHT", totemButton, "LEFT", -2, 0)
+		elseif spaceRight >= spaceLeft then
+			flyout:SetPoint("LEFT", totemButton, "RIGHT", 2, 0)
+		else
+			flyout:SetPoint("RIGHT", totemButton, "LEFT", -2, 0)
+		end
+	end
+end
+
+-- Update flyout to hide currently assigned totem and reposition
+-- For horizontal bar: flyout is VERTICAL (buttons stacked top to bottom)
+-- For vertical bar: flyout is HORIZONTAL (buttons in a row left to right)
 function ShamanPower:UpdateFlyoutVisibility(element)
 	local flyout = self.totemFlyouts[element]
 	if not flyout or not flyout.buttons then return end
+
+	-- Don't modify secure buttons during combat
+	if InCombatLockdown() then
+		return
+	end
 
 	-- Get current assignment
 	local assignments = ShamanPower_Assignments[self.player]
 	local currentTotemIndex = assignments and assignments[element] or 0
 
-	-- Show/hide buttons and reposition
-	local buttonSize = 28
-	local padding = 4
-	local spacing = 2
-	local visibleIndex = 0
+	-- For horizontal bar, flyout is vertical. For vertical bar, flyout is horizontal.
+	local isHorizontalBar = (self.opt.layout == "Horizontal")
+	local flyoutIsHorizontal = not isHorizontalBar
 
+	local buttonSize = flyout.buttonSize or 28
+	local padding = flyout.padding or 4
+	local spacing = flyout.spacing or 2
+	local visibleIndex = 0
+	local visibleButtons = {}
+
+	-- First pass: determine which buttons are visible
 	for _, btn in ipairs(flyout.buttons) do
 		if btn.totemIndex == currentTotemIndex then
 			btn:Hide()
 		else
-			btn:Show()
-			btn:ClearAllPoints()
-			btn:SetPoint("TOP", flyout, "TOP", 0, -padding - visibleIndex * (buttonSize + spacing))
 			visibleIndex = visibleIndex + 1
+			table.insert(visibleButtons, btn)
 		end
 	end
 
-	-- Resize flyout based on visible buttons
+	-- Resize and reposition based on visible buttons
 	if visibleIndex == 0 then
 		flyout:Hide()
+		return
+	end
+
+	-- Layout visible buttons
+	if flyoutIsHorizontal then
+		-- Horizontal flyout (for vertical bar)
+		local width = (buttonSize * visibleIndex) + (spacing * (visibleIndex - 1)) + (padding * 2)
+		flyout:SetSize(width, buttonSize + padding * 2)
+
+		for i, btn in ipairs(visibleButtons) do
+			btn:ClearAllPoints()
+			btn:SetPoint("LEFT", flyout, "LEFT", padding + (i - 1) * (buttonSize + spacing), 0)
+			btn:Show()
+		end
 	else
+		-- Vertical flyout (for horizontal bar)
 		local height = (buttonSize * visibleIndex) + (spacing * (visibleIndex - 1)) + (padding * 2)
 		flyout:SetSize(buttonSize + padding * 2, height)
+
+		for i, btn in ipairs(visibleButtons) do
+			btn:ClearAllPoints()
+			btn:SetPoint("TOP", flyout, "TOP", 0, -padding - (i - 1) * (buttonSize + spacing))
+			btn:Show()
+		end
+	end
+
+	-- Reposition the flyout with smart edge detection
+	local totemButton = _G["ShamanPowerAutoTotem" .. element]
+	if totemButton then
+		self:PositionFlyout(flyout, totemButton)
 	end
 end
 
 -- Setup all flyout menus
 function ShamanPower:SetupTotemFlyouts()
 	if not self.opt.showTotemFlyouts then return end
-	-- Only setup once - HookScript adds handlers cumulatively
-	if self.totemFlyoutsSetup then return end
-	self.totemFlyoutsSetup = true
 
 	for element = 1, 4 do
 		local totemButton = _G["ShamanPowerAutoTotem" .. element]
@@ -2354,35 +2553,43 @@ function ShamanPower:SetupTotemFlyouts()
 			local flyout = self:CreateTotemFlyout(element)
 			if not flyout then return end
 
-			-- Position flyout above the button
-			flyout:ClearAllPoints()
-			flyout:SetPoint("BOTTOM", totemButton, "TOP", 0, 2)
+			-- Only install hooks once per totem button
+			if not self.flyoutHooksInstalled[element] then
+				self.flyoutHooksInstalled[element] = true
 
-			-- Show flyout on mouse enter
-			totemButton:HookScript("OnEnter", function(btn)
-				if ShamanPower.opt.showTotemFlyouts then
-					ShamanPower:UpdateFlyoutVisibility(element)
-					flyout:Show()
+				-- Show flyout on mouse enter
+				totemButton:HookScript("OnEnter", function(btn)
+					-- Don't show flyouts during combat
+					if InCombatLockdown() then return end
+
+					if ShamanPower.opt.showTotemFlyouts then
+						local currentFlyout = ShamanPower.totemFlyouts[element]
+						if currentFlyout then
+							ShamanPower:UpdateFlyoutVisibility(element)
+							currentFlyout:Show()
+						end
+					end
+				end)
+
+				-- Hide flyout when mouse leaves both button and flyout
+				local function CheckMouseOver()
+					local currentFlyout = ShamanPower.totemFlyouts[element]
+					if not currentFlyout or not currentFlyout:IsShown() then return end
+					if currentFlyout:IsMouseOver() or totemButton:IsMouseOver() then
+						C_Timer.After(0.1, CheckMouseOver)
+					else
+						currentFlyout:Hide()
+					end
 				end
-			end)
 
-			-- Hide flyout when mouse leaves both button and flyout
-			local function CheckMouseOver()
-				if not flyout:IsShown() then return end
-				if flyout:IsMouseOver() or totemButton:IsMouseOver() then
+				totemButton:HookScript("OnLeave", function(btn)
 					C_Timer.After(0.1, CheckMouseOver)
-				else
-					flyout:Hide()
-				end
+				end)
+
+				flyout:SetScript("OnLeave", function(self)
+					C_Timer.After(0.1, CheckMouseOver)
+				end)
 			end
-
-			totemButton:HookScript("OnLeave", function(btn)
-				C_Timer.After(0.1, CheckMouseOver)
-			end)
-
-			flyout:SetScript("OnLeave", function(self)
-				C_Timer.After(0.1, CheckMouseOver)
-			end)
 		end
 	end
 end

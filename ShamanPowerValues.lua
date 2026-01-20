@@ -20,6 +20,16 @@ BINDING_NAME_SHAMANPOWER_AIR_TOTEM = "Cast Assigned Air Totem"
 BINDING_NAME_SHAMANPOWER_EARTH_SHIELD = "Cast Earth Shield on Assigned Target"
 BINDING_NAME_SHAMANPOWER_TOTEMIC_CALL = "Totemic Call (Recall Totems)"
 
+-- Cooldown Bar keybindings
+BINDING_HEADER_SHAMANPOWER_CD = "ShamanPower Cooldown Bar"
+BINDING_NAME_SHAMANPOWER_CD_SHIELD = "Cast Shield (Lightning/Water)"
+BINDING_NAME_SHAMANPOWER_CD_RECALL = "Totemic Call (Recall)"
+BINDING_NAME_SHAMANPOWER_CD_ANKH = "Reincarnation (Ankh)"
+BINDING_NAME_SHAMANPOWER_CD_NS = "Nature's Swiftness"
+BINDING_NAME_SHAMANPOWER_CD_MANATIDE = "Mana Tide Totem"
+BINDING_NAME_SHAMANPOWER_CD_BLOODLUST = "Bloodlust / Heroism"
+BINDING_NAME_SHAMANPOWER_CD_IMBUE = "Cast Weapon Imbue"
+
 -- Tooltip descriptions
 SHAMANPOWER_REFRESH_DESC = "Refresh the shaman list"
 SHAMANPOWER_CLEAR_DESC = "Clear all totem assignments"
@@ -90,6 +100,7 @@ SHAMANPOWER_DEFAULT_VALUES = {
         showDropAllButton = true,  -- Show the Drop All Totems button on mini bar
         showPartyRangeDots = true,  -- Show party range indicator dots on mini totem bar
         showCooldownBar = true,  -- Show the cooldown tracker bar below totem bar
+        showButtonKeybinds = false,  -- Show keybind text on buttons (top-right corner)
         hideTotemBarFrame = false,  -- Hide the background/border around totem bar (icons only)
         hideCooldownBarFrame = false,  -- Hide the background/border around cooldown bar (icons only)
         cooldownBarLocked = true,  -- When false, CD bar can be moved independently from totem bar

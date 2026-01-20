@@ -2891,6 +2891,15 @@ function ShamanPower:CreateCooldownBar()
 			timeText:SetText("")
 			btn.timeText = timeText
 
+			-- Keybind text (top right corner, like standard action buttons)
+			local keybindText = btn:CreateFontString(nil, "OVERLAY")
+			keybindText:SetFont("Fonts\\ARIALN.TTF", 9, "OUTLINE")
+			keybindText:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 1, 0)
+			keybindText:SetTextColor(0.9, 0.9, 0.9, 1)
+			keybindText:SetText("")
+			keybindText:Hide()  -- Hidden by default, shown if option enabled
+			btn.keybindText = keybindText
+
 			-- Charge count text for shield buttons (bottom right corner)
 			if spellType == "shield" then
 				local chargeText = btn:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
@@ -3654,6 +3663,16 @@ function ShamanPower:CreateWeaponImbueButton()
 	timeText:SetPoint("CENTER", btn, "CENTER", 0, 0)
 	timeText:SetText("")
 	btn.timeText = timeText
+
+	-- Keybind text (top right corner, like standard action buttons)
+	local keybindText = btn:CreateFontString(nil, "OVERLAY")
+	keybindText:SetFont("Fonts\\ARIALN.TTF", 9, "OUTLINE")
+	keybindText:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 1, 0)
+	keybindText:SetTextColor(0.9, 0.9, 0.9, 1)
+	keybindText:SetText("")
+	keybindText:Hide()  -- Hidden by default, shown if option enabled
+	btn.keybindText = keybindText
+	btn.cooldownType = 7  -- Imbue type for keybind lookup
 
 	-- Show flyout on mouse enter (like totem flyouts)
 	btn:SetScript("OnEnter", function(self)
@@ -8783,6 +8802,33 @@ ShamanPower.KeybindButtons = {
 	["SHAMANPOWER_TOTEMIC_CALL"] = "ShamanPowerTotemicCallBtn",
 }
 
+-- Map cooldown bar binding names to cooldownType values
+-- cooldownType: 1=Shield, 2=Recall, 3=Ankh, 4=NS, 5=MTT, 6=BL/Hero, 7=Imbue
+ShamanPower.CooldownBarKeybinds = {
+	["SHAMANPOWER_CD_SHIELD"] = 1,
+	["SHAMANPOWER_CD_RECALL"] = 2,
+	["SHAMANPOWER_CD_ANKH"] = 3,
+	["SHAMANPOWER_CD_NS"] = 4,
+	["SHAMANPOWER_CD_MANATIDE"] = 5,
+	["SHAMANPOWER_CD_BLOODLUST"] = 6,
+	["SHAMANPOWER_CD_IMBUE"] = 7,
+}
+
+-- Find a cooldown button by its cooldownType
+function ShamanPower:GetCooldownButtonByCooldownType(cooldownType)
+	if cooldownType == 7 then
+		-- Weapon imbue button
+		return self.weaponImbueButton
+	end
+	if not self.cooldownButtons then return nil end
+	for _, btn in ipairs(self.cooldownButtons) do
+		if btn.cooldownType == cooldownType then
+			return btn
+		end
+	end
+	return nil
+end
+
 -- Create a hidden button for Totemic Call keybind
 function ShamanPower:CreateTotemicCallButton()
 	if _G["ShamanPowerTotemicCallBtn"] then return end
@@ -8949,6 +8995,106 @@ SlashCmdList["SPMACROS"] = function()
 	print("Drag them to your action bar - they auto-update when you change assignments!")
 end
 
+-- Convert a key binding to a short display string
+local function GetShortKeybindText(key)
+	if not key then return nil end
+	-- Make common modifiers shorter
+	key = key:gsub("CTRL%-", "C-")
+	key = key:gsub("ALT%-", "A-")
+	key = key:gsub("SHIFT%-", "S-")
+	key = key:gsub("NUMPAD", "N")
+	key = key:gsub("BUTTON", "M")
+	key = key:gsub("MOUSEWHEELUP", "MWU")
+	key = key:gsub("MOUSEWHEELDOWN", "MWD")
+	return key
+end
+
+-- Map totem bar binding names to button names
+ShamanPower.TotemBarKeybinds = {
+	["SHAMANPOWER_EARTH_TOTEM"] = "ShamanPowerAutoTotem1",
+	["SHAMANPOWER_FIRE_TOTEM"] = "ShamanPowerAutoTotem2",
+	["SHAMANPOWER_WATER_TOTEM"] = "ShamanPowerAutoTotem3",
+	["SHAMANPOWER_AIR_TOTEM"] = "ShamanPowerAutoTotem4",
+	["SHAMANPOWER_DROPALL"] = "ShamanPowerAutoDropAll",
+}
+
+-- Set up keybind text FontStrings on totem bar buttons (they're created in XML without keybind text)
+function ShamanPower:SetupTotemBarKeybindText()
+	for bindingName, buttonName in pairs(self.TotemBarKeybinds) do
+		local btn = _G[buttonName]
+		if btn and not btn.keybindText then
+			local keybindText = btn:CreateFontString(nil, "OVERLAY")
+			keybindText:SetFont("Fonts\\ARIALN.TTF", 9, "OUTLINE")
+			keybindText:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 1, 0)
+			keybindText:SetTextColor(0.9, 0.9, 0.9, 1)
+			keybindText:SetText("")
+			keybindText:Hide()
+			btn.keybindText = keybindText
+		end
+	end
+end
+
+-- Update keybind text on all buttons (totem bar + cooldown bar)
+function ShamanPower:UpdateButtonKeybindText()
+	-- Set up totem bar keybind text if not already done
+	self:SetupTotemBarKeybindText()
+
+	if not self.opt.showButtonKeybinds then
+		-- Hide all keybind text if option disabled
+		-- Hide totem bar keybind text
+		for _, buttonName in pairs(self.TotemBarKeybinds) do
+			local btn = _G[buttonName]
+			if btn and btn.keybindText then
+				btn.keybindText:Hide()
+			end
+		end
+		-- Hide cooldown bar keybind text
+		if self.cooldownButtons then
+			for _, btn in ipairs(self.cooldownButtons) do
+				if btn.keybindText then
+					btn.keybindText:Hide()
+				end
+			end
+		end
+		if self.weaponImbueButton and self.weaponImbueButton.keybindText then
+			self.weaponImbueButton.keybindText:Hide()
+		end
+		return
+	end
+
+	-- Update keybind text for totem bar buttons
+	for bindingName, buttonName in pairs(self.TotemBarKeybinds) do
+		local btn = _G[buttonName]
+		if btn and btn.keybindText then
+			local key1, key2 = GetBindingKey(bindingName)
+			local keyText = GetShortKeybindText(key1)
+			if keyText then
+				btn.keybindText:SetText(keyText)
+				btn.keybindText:Show()
+			else
+				btn.keybindText:SetText("")
+				btn.keybindText:Hide()
+			end
+		end
+	end
+
+	-- Update keybind text for each cooldown bar button
+	for bindingName, cooldownType in pairs(self.CooldownBarKeybinds) do
+		local btn = self:GetCooldownButtonByCooldownType(cooldownType)
+		if btn and btn.keybindText then
+			local key1, key2 = GetBindingKey(bindingName)
+			local keyText = GetShortKeybindText(key1)
+			if keyText then
+				btn.keybindText:SetText(keyText)
+				btn.keybindText:Show()
+			else
+				btn.keybindText:SetText("")
+				btn.keybindText:Hide()
+			end
+		end
+	end
+end
+
 function ShamanPower:SetupKeybindings()
 	-- Can't modify bindings during combat
 	if InCombatLockdown() then
@@ -8967,7 +9113,7 @@ function ShamanPower:SetupKeybindings()
 	-- Clear any existing override bindings
 	ClearOverrideBindings(self.keybindFrame)
 
-	-- Set up override bindings for each keybind
+	-- Set up override bindings for totem bar buttons (static button names)
 	for bindingName, buttonName in pairs(self.KeybindButtons) do
 		local key1, key2 = GetBindingKey(bindingName)
 		if key1 then
@@ -8978,7 +9124,27 @@ function ShamanPower:SetupKeybindings()
 		end
 	end
 
+	-- Set up override bindings for cooldown bar buttons (dynamic button lookup)
+	for bindingName, cooldownType in pairs(self.CooldownBarKeybinds) do
+		local btn = self:GetCooldownButtonByCooldownType(cooldownType)
+		if btn then
+			local buttonName = btn:GetName()
+			if buttonName then
+				local key1, key2 = GetBindingKey(bindingName)
+				if key1 then
+					SetOverrideBindingClick(self.keybindFrame, false, key1, buttonName, "LeftButton")
+				end
+				if key2 then
+					SetOverrideBindingClick(self.keybindFrame, false, key2, buttonName, "LeftButton")
+				end
+			end
+		end
+	end
+
 	self.keybindsPending = false
+
+	-- Update keybind text on buttons if enabled
+	self:UpdateButtonKeybindText()
 end
 
 -- Register for binding updates

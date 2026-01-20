@@ -240,6 +240,23 @@ ShamanPower.options = {
 								ShamanPower:UpdateCooldownBarFrame()
 							end
 						},
+						show_button_keybinds = {
+							order = 1.9,
+							type = "toggle",
+							name = "Show Keybinds on Buttons",
+							desc = "Display keybind text on cooldown bar buttons (top-right corner)",
+							width = 1.5,
+							disabled = function(info)
+								return not ShamanPower.opt.showCooldownBar
+							end,
+							get = function(info)
+								return ShamanPower.opt.showButtonKeybinds
+							end,
+							set = function(info, val)
+								ShamanPower.opt.showButtonKeybinds = val
+								ShamanPower:UpdateButtonKeybindText()
+							end
+						},
 						padding1 = {
 							order = 2,
 							name = "",

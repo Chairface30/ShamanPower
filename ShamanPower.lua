@@ -2379,6 +2379,7 @@ function ShamanPower:LayoutFlyoutButtons(flyout, flyoutIsHorizontal)
 	-- Default: if bar is horizontal, flyout is vertical (and vice versa)
 	if flyoutIsHorizontal == nil then
 		local isHorizontalBar = (self.opt.layout == "Horizontal")
+		-- Both "Vertical" and "VerticalLeft" result in horizontal flyouts
 		flyoutIsHorizontal = not isHorizontalBar
 	end
 
@@ -2414,10 +2415,12 @@ end
 -- Position flyout relative to totem button, reversing direction if needed
 -- For horizontal bar layout: flyout extends vertically (above/below)
 -- For vertical bar layout: flyout extends horizontally (left/right)
+-- "Vertical" (Right) prefers flyouts to the right, "VerticalLeft" prefers flyouts to the left
 function ShamanPower:PositionFlyout(flyout, totemButton)
 	if not flyout or not totemButton then return end
 
 	local isHorizontalBar = (self.opt.layout == "Horizontal")
+	local isVerticalLeft = (self.opt.layout == "VerticalLeft")
 
 	-- Match the scale of the parent button's frame
 	local parentScale = totemButton:GetEffectiveScale() / UIParent:GetEffectiveScale()
@@ -2455,17 +2458,32 @@ function ShamanPower:PositionFlyout(flyout, totemButton)
 		end
 	else
 		-- Vertical bar: flyout is HORIZONTAL and goes left or right
+		-- "VerticalLeft" prefers left, "Vertical" (Right) prefers right
 		local spaceRight = screenWidth - buttonRight
 		local spaceLeft = buttonLeft
 
-		if spaceRight >= flyoutWidth + 2 then
-			flyout:SetPoint("LEFT", totemButton, "RIGHT", 2, 0)
-		elseif spaceLeft >= flyoutWidth + 2 then
-			flyout:SetPoint("RIGHT", totemButton, "LEFT", -2, 0)
-		elseif spaceRight >= spaceLeft then
-			flyout:SetPoint("LEFT", totemButton, "RIGHT", 2, 0)
+		if isVerticalLeft then
+			-- Prefer left side
+			if spaceLeft >= flyoutWidth + 2 then
+				flyout:SetPoint("RIGHT", totemButton, "LEFT", -2, 0)
+			elseif spaceRight >= flyoutWidth + 2 then
+				flyout:SetPoint("LEFT", totemButton, "RIGHT", 2, 0)
+			elseif spaceLeft >= spaceRight then
+				flyout:SetPoint("RIGHT", totemButton, "LEFT", -2, 0)
+			else
+				flyout:SetPoint("LEFT", totemButton, "RIGHT", 2, 0)
+			end
 		else
-			flyout:SetPoint("RIGHT", totemButton, "LEFT", -2, 0)
+			-- Prefer right side (default "Vertical")
+			if spaceRight >= flyoutWidth + 2 then
+				flyout:SetPoint("LEFT", totemButton, "RIGHT", 2, 0)
+			elseif spaceLeft >= flyoutWidth + 2 then
+				flyout:SetPoint("RIGHT", totemButton, "LEFT", -2, 0)
+			elseif spaceRight >= spaceLeft then
+				flyout:SetPoint("LEFT", totemButton, "RIGHT", 2, 0)
+			else
+				flyout:SetPoint("RIGHT", totemButton, "LEFT", -2, 0)
+			end
 		end
 	end
 end
@@ -2486,7 +2504,7 @@ function ShamanPower:UpdateFlyoutVisibility(element)
 	local assignments = ShamanPower_Assignments[self.player]
 	local currentTotemIndex = assignments and assignments[element] or 0
 
-	-- For horizontal bar, flyout is vertical. For vertical bar, flyout is horizontal.
+	-- For horizontal bar, flyout is vertical. For vertical bar (both "Vertical" and "VerticalLeft"), flyout is horizontal.
 	local isHorizontalBar = (self.opt.layout == "Horizontal")
 	local flyoutIsHorizontal = not isHorizontalBar
 
@@ -2934,7 +2952,7 @@ function ShamanPower:UpdateCooldownBarLayout()
 	local spacing = bar.spacing or 8
 	local padding = bar.padding or 4
 	local numButtons = #self.cooldownButtons
-	local isVertical = (self.opt.layout == "Vertical")
+	local isVertical = (self.opt.layout == "Vertical" or self.opt.layout == "VerticalLeft")
 
 	if isVertical then
 		-- Vertical: stack buttons top to bottom
@@ -3037,11 +3055,17 @@ function ShamanPower:UpdateCooldownBar()
 		self:UpdateCooldownBarLayout()
 
 		-- Position based on layout orientation
-		local isVertical = (self.opt.layout == "Vertical")
+		local isVertical = (self.opt.layout == "Vertical" or self.opt.layout == "VerticalLeft")
+		local isVerticalLeft = (self.opt.layout == "VerticalLeft")
 		self.cooldownBar:ClearAllPoints()
 		if isVertical then
-			-- Vertical: position to the left of the main totem bar
-			self.cooldownBar:SetPoint("RIGHT", self.autoButton, "LEFT", -2, 0)
+			if isVerticalLeft then
+				-- Vertical (Left): bar on left side of screen, CDs go to the RIGHT of totems
+				self.cooldownBar:SetPoint("LEFT", self.autoButton, "RIGHT", 2, 0)
+			else
+				-- Vertical (Right): bar on right side of screen, CDs go to the LEFT of totems
+				self.cooldownBar:SetPoint("RIGHT", self.autoButton, "LEFT", -2, 0)
+			end
 		else
 			-- Horizontal: position below the main totem bar
 			self.cooldownBar:SetPoint("TOP", self.autoButton, "BOTTOM", 0, -2)
@@ -5320,7 +5344,7 @@ function ShamanPower:UpdateLayout()
 	local pointOpposite = "BOTTOMLEFT"
 	local layout = self.Layouts[self.opt.layout]
 	if not layout then
-		-- Fallback to Vertical if the configured layout doesn't exist
+		-- Fallback to Vertical (Right) if the configured layout doesn't exist
 		self.opt.layout = "Vertical"
 		layout = self.Layouts["Vertical"]
 	end
@@ -6009,10 +6033,13 @@ end
 function ShamanPower:UpdateAnchor(displayedButtons)
 	ShamanPowerAnchor:SetChecked(self.opt.display.frameLocked)
 	if self.opt.display.enableDragHandle and ((GetNumGroupMembers() == 0 and self.opt.ShowWhenSolo) or (GetNumGroupMembers() > 0 and self.opt.ShowInParty)) then
+		ShamanPowerAnchor:ClearAllPoints()
 		-- Position the anchor relative to the mini totem bar (autoButton) if it's visible
 		if self.autoButton and self.autoButton:IsShown() then
-			ShamanPowerAnchor:ClearAllPoints()
 			ShamanPowerAnchor:SetPoint("BOTTOM", self.autoButton, "TOP", 0, 4)
+		elseif self.Header then
+			-- Fallback: position relative to the Header when mini totem bar is hidden (e.g., TotemTimers sync enabled)
+			ShamanPowerAnchor:SetPoint("TOP", self.Header, "BOTTOM", 0, -4)
 		end
 		ShamanPowerAnchor:Show()
 	else
@@ -9206,7 +9233,7 @@ function ShamanPower:CreateSPRangeFrame()
 	-- Title
 	local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	title:SetPoint("TOP", frame, "TOP", 0, -6)
-	title:SetText("SPRange")
+	title:SetText("Totem Range")
 	title:SetTextColor(1, 0.82, 0)
 	frame.title = title
 
@@ -9221,7 +9248,7 @@ function ShamanPower:CreateSPRangeFrame()
 	end)
 	settingsBtn:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:AddLine("Configure SPRange", 1, 1, 1)
+		GameTooltip:AddLine("Configure Totem Range", 1, 1, 1)
 		GameTooltip:Show()
 	end)
 	settingsBtn:SetScript("OnLeave", function()
@@ -9261,7 +9288,7 @@ function ShamanPower:CreateSPRangeFrame()
 	-- Tooltip
 	frame:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_TOP")
-		GameTooltip:AddLine("SPRange - Totem Range Tracker", 1, 0.82, 0)
+		GameTooltip:AddLine("Totem Range Tracker", 1, 0.82, 0)
 		GameTooltip:AddLine(" ")
 		if ShamanPower_RangeTracker.hideBorder then
 			GameTooltip:AddLine("ALT+drag to move", 0.7, 0.7, 0.7)
@@ -9391,7 +9418,7 @@ function ShamanPower:UpdateSPRangeFrame()
 
 	if #trackedList == 0 then
 		frame:SetSize(120, 50)
-		frame.title:SetText("SPRange (none)")
+		frame.title:SetText("Totem Range (none)")
 		return
 	end
 
@@ -9415,7 +9442,7 @@ function ShamanPower:UpdateSPRangeFrame()
 	end
 
 	frame:SetSize(math.max(80, width), height)
-	frame.title:SetText("SPRange")
+	frame.title:SetText("Totem Range")
 
 	-- Create buttons
 	for i, totemData in ipairs(trackedList) do
@@ -9627,7 +9654,7 @@ function ShamanPower:ShowSPRangeConfig()
 		-- Title
 		local title = config:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 		title:SetPoint("TOP", config, "TOP", 0, -8)
-		title:SetText("SPRange - Click totems to track")
+		title:SetText("Totem Range - Click totems to track")
 		title:SetTextColor(1, 0.82, 0)
 
 		-- Close button
@@ -9918,6 +9945,7 @@ function ShamanPower:ToggleSPRange()
 
 	if self.spRangeFrame:IsShown() then
 		self.spRangeFrame:Hide()
+		self.spRangeManuallyOpened = false  -- User closed it manually
 		ShamanPower_RangeTracker.shown = false
 		self:Print("SPRange hidden. Use /sprange to show.")
 	else
@@ -9932,6 +9960,7 @@ function ShamanPower:ToggleSPRange()
 		self:UpdateSPRangeBorder()
 		self:UpdateSPRangeOpacity()
 		self.spRangeFrame:Show()
+		self.spRangeManuallyOpened = true  -- User opened it manually
 		ShamanPower_RangeTracker.shown = true
 		self:Print("SPRange shown. Click settings cog to configure.")
 	end
@@ -10038,6 +10067,11 @@ end
 -- Auto-show/hide SPRange based on group composition
 function ShamanPower:UpdateSPRangeVisibility()
 	if not self.spRangeFrame then return end
+
+	-- Don't auto-hide if user manually opened it (shamans may want to track their own totems)
+	if self.spRangeManuallyOpened then
+		return
+	end
 
 	local shouldShow = self:SPRangeHasAnyShamanInGroup()
 

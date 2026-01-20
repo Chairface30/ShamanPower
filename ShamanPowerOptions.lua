@@ -232,7 +232,8 @@ ShamanPower.options = {
 							end,
 							values = {
 								["Horizontal"] = "Horizontal",
-								["Vertical"] = "Vertical",
+								["Vertical"] = "Vertical (Right)",
+								["VerticalLeft"] = "Vertical (Left)",
 							}
 						},
 						skin = {

@@ -95,7 +95,7 @@ SHAMANPOWER_DEFAULT_VALUES = {
         dropOrder = {1, 2, 3, 4},  -- Order to drop totems: 1=Earth, 2=Fire, 3=Water, 4=Air
         skin = "Smooth",
         SmartBuffs = true,
-        syncToTotemTimers = true,  -- Sync assignments to TotemTimers addon (if installed)
+        syncToTotemTimers = false,  -- Sync assignments to TotemTimers addon (if installed)
         weaponEnchant = 1,  -- Default weapon enchant (Windfury)
     }
 }
@@ -531,6 +531,23 @@ ShamanPower.Layouts = {
         aud1 = {x = -1, y = 0},
         aud2 = {x = -1, y = 0},
         dh = {x = 6, y = 0},
+    },
+    ["VerticalLeft"] = {
+        -- Vertical Left layout - same as Vertical but flyouts expand to the left
+        c = {
+            [1] = {x = 0, y = 0, p = createPlayerPositions(1, 0, 0, 8)},   -- Earth
+            [2] = {x = 0, y = -1, p = createPlayerPositions(1, 0, 0, 8)},  -- Fire
+            [3] = {x = 0, y = -2, p = createPlayerPositions(1, 0, 0, 8)},  -- Water
+            [4] = {x = 0, y = -3, p = createPlayerPositions(1, 0, 0, 8)},  -- Air
+        },
+        ab = {x = 0, y = -4},
+        rf = {x = 0, y = -5},
+        rfd = {x = 0, y = -4},  -- rf disabled position
+        aura = {x = 0, y = 1},
+        au = {x = 0, y = 1},
+        aud1 = {x = 0, y = 1},
+        aud2 = {x = 0, y = 1},
+        dh = {x = 0, y = -6},
     },
 }
 

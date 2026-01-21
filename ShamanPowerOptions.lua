@@ -397,6 +397,26 @@ ShamanPower.options = {
 								ShamanPower.opt.showTotemFlyouts = val
 							end
 						},
+						flyout_swap_clicks = {
+							order = 2.26,
+							type = "toggle",
+							name = "Swap Flyout Clicks",
+							desc = "[Enable/Disable] Swap left/right click on flyout buttons. When enabled: Left-click assigns totem, Right-click casts totem.",
+							width = 1.3,
+							disabled = function(info)
+								return not ShamanPower.opt.showTotemFlyouts
+							end,
+							get = function(info)
+								return ShamanPower.opt.flyoutSwapClicks
+							end,
+							set = function(info, val)
+								ShamanPower.opt.flyoutSwapClicks = val
+								-- Recreate flyouts to apply new click behavior
+								if not InCombatLockdown() then
+									ShamanPower:RefreshTotemFlyouts()
+								end
+							end
+						},
 						drop_order_header = {
 							order = 2.5,
 							type = "description",

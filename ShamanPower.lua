@@ -2291,9 +2291,18 @@ function ShamanPower:CreateTotemFlyout(element)
 			btn:SetSize(buttonSize, buttonSize)
 			btn:RegisterForClicks("LeftButtonUp", "LeftButtonDown", "RightButtonUp")
 
-			-- Left-click casts spell, right-click does nothing (assignment handled in PostClick)
-			btn:SetAttribute("type1", "spell")
-			btn:SetAttribute("spell", spellName)
+			-- Check if clicks should be swapped
+			local swapClicks = self.opt.flyoutSwapClicks
+			
+			if swapClicks then
+				-- Swapped: Right-click casts spell, left-click handled in PostClick for assignment
+				btn:SetAttribute("type2", "spell")
+				btn:SetAttribute("spell", spellName)
+			else
+				-- Default: Left-click casts spell, right-click handled in PostClick for assignment
+				btn:SetAttribute("type1", "spell")
+				btn:SetAttribute("spell", spellName)
+			end
 
 			-- Create icon texture explicitly
 			local iconTex = btn:CreateTexture(nil, "ARTWORK")
@@ -2306,22 +2315,28 @@ function ShamanPower:CreateTotemFlyout(element)
 			highlight:SetAllPoints()
 			highlight:SetColorTexture(1, 1, 1, 0.3)
 
-			-- Tooltip
+			-- Tooltip - shows current click behavior
 			btn:SetScript("OnEnter", function(self)
 				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 				GameTooltip:SetSpellByID(spellID)
 				GameTooltip:AddLine(" ")
-				GameTooltip:AddLine("|cff00ff00Left-click:|r Cast totem", 1, 1, 1)
-				GameTooltip:AddLine("|cffffcc00Right-click:|r Set as assigned totem", 1, 1, 1)
+				if ShamanPower.opt.flyoutSwapClicks then
+					GameTooltip:AddLine("|cff00ff00Left-click:|r Set as assigned totem", 1, 1, 1)
+					GameTooltip:AddLine("|cffffcc00Right-click:|r Cast totem", 1, 1, 1)
+				else
+					GameTooltip:AddLine("|cff00ff00Left-click:|r Cast totem", 1, 1, 1)
+					GameTooltip:AddLine("|cffffcc00Right-click:|r Set as assigned totem", 1, 1, 1)
+				end
 				GameTooltip:Show()
 			end)
 			btn:SetScript("OnLeave", function(self)
 				GameTooltip:Hide()
 			end)
 
-			-- Right-click to set as assigned totem
+			-- Handle assignment click (left if swapped, right if not)
 			btn:SetScript("PostClick", function(self, button)
-				if button == "RightButton" then
+				local assignButton = ShamanPower.opt.flyoutSwapClicks and "LeftButton" or "RightButton"
+				if button == assignButton then
 					if InCombatLockdown() then
 						print("|cffff0000ShamanPower:|r Cannot change assignments in combat")
 						return
